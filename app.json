@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "SalApp Wali",
+    "slug": "PortalNative",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/salapp-logo.png",
+    "scheme": "portalnative",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/salapp-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/salapp-logo.png",
+        "monochromeImage": "./assets/notification-icon.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.salapp.portal",
+      "googleServicesFile": "./google-services.json"
+    },
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#1A73E8"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7537bbec-8d68-4f88-bb50-c98c249264f5"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7537bbec-8d68-4f88-bb50-c98c249264f5"
+    }
+  }
+}
