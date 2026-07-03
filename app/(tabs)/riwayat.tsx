@@ -118,7 +118,7 @@ export default function Riwayat() {
     return new Date(0);
   };
 
-  const historyData = [...dataTabungan, ...dataPembayaran, ...dataPesanan].sort((a, b) => {
+  const historyData = [...dataPembayaran, ...dataPesanan].sort((a, b) => {
     const dateA = a.tanggal || a.Waktu;
     const dateB = b.tanggal || b.Waktu;
     return safeDate(dateB).getTime() - safeDate(dateA).getTime();
@@ -132,7 +132,7 @@ export default function Riwayat() {
         </View>
         <View>
           <Text style={tw`font-extrabold text-ink text-xl`}>Riwayat</Text>
-          <Text style={tw`text-[10px] text-steel font-medium`}>Riwayat transaksi dan mutasi</Text>
+          <Text style={tw`text-[10px] text-steel font-medium`}>Riwayat transaksi dan pembayaran</Text>
         </View>
       </View>
 
