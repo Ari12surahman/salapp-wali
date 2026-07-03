@@ -10,11 +10,44 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 
-const fetchPakasirProxy = async (action: string, data: any) => {
-  const PROXY_URL = "https://script.google.com/macros/s/AKfycbySCGbNxmkRdsyI2RSbszpwC8mxwhfbQulQsiG_DfUU1tdje_BCn9Tz9tdk_ERFLLOA/exec";
-  const url = `${PROXY_URL}?action=${action}&data=${encodeURIComponent(JSON.stringify(data))}`;
-  const response = await fetch(url);
-  return await response.json();
+const fetchPakasirDirect = async (action: string, payload: any) => {
+  if (action === 'requestPakasirPayment') {
+    const url = `https://${payload.slug}.pakasir.com/api/transaction/create`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': payload.apiKey
+      },
+      body: JSON.stringify({
+        amount: payload.amount,
+        order_id: payload.orderId,
+        method: payload.method === 'qris' ? 'qris' : 'va'
+      })
+    });
+    
+    const responseText = await res.text();
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      return { error: responseText };
+    }
+  } else if (action === 'pollPakasirStatus') {
+    const url = `https://${payload.slug}.pakasir.com/api/transaction/status/${payload.orderId}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': payload.apiKey
+      }
+    });
+    const responseText = await res.text();
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      return { error: responseText };
+    }
+  }
+  return { error: "Unknown action" };
 };
 
 export default function PakasirModal() {
@@ -125,7 +158,7 @@ export default function PakasirModal() {
         method: method === "qris" ? "qris" : "va"
       };
 
-      const res = await fetchPakasirProxy("requestPakasirPayment", payload);
+      const res = await fetchPakasirDirect("requestPakasirPayment", payload);
       
       if (res && res.data && (res.data.qr_string || res.data.payment_code)) {
         if (method === "qris") {
@@ -159,7 +192,7 @@ export default function PakasirModal() {
     if (pollingInterval) clearInterval(pollingInterval);
     const interval = setInterval(async () => {
       try {
-        const res = await fetchPakasirProxy("pollPakasirStatus", { slug, apiKey, orderId });
+        const res = await fetchPakasirDirect("pollPakasirStatus", { slug, apiKey, orderId });
         if (res && res.data && res.data.status === "PAID") {
           clearInterval(interval);
           simulateSuccess(); // Panggil fungsi sukses
