@@ -112,17 +112,29 @@ export default function PakasirModal() {
       let slug = "sunbox";
       let apiKey = "xxx123";
       
-      if (bulkData?.masterBills) {
+      if (bulkData?.masterBills && bulkData.masterBills.length > 0) {
         // Coba cari master tagihan yang relevan dengan tipe pembayaran saat ini
         let masterTagihanObj = null;
         if (type === "BAYAR_TAGIHAN" && data?.tagihan) {
-           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan === data.tagihan);
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === data.tagihan.toLowerCase());
         } else if (type === "BAYAR_BEBAS" && selectedBulkItems.length > 0) {
-           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan === selectedBulkItems[0].tagihan);
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === selectedBulkItems[0].tagihan.toLowerCase());
         } else if (type === "TOPUP_TABUNGAN") {
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan?.toLowerCase().includes("tabungan"));
+        } else if (type === "TITIP_JAJAN") {
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan?.toLowerCase().includes("jajan"));
         }
         
+        // Fallback: Gunakan kredensial pertama yang valid jika tidak ada match khusus
+        if (!masterTagihanObj || !masterTagihanObj.pakasirSlug) {
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.pakasirSlug && m.pakasirSlug !== "sunbox");
+        }
+        
+        // Jika masih tidak ketemu, gunakan yang pertama ada
+        if (!masterTagihanObj && bulkData.masterBills[0]) {
+           masterTagihanObj = bulkData.masterBills[0];
+        }
+
         if (masterTagihanObj) {
            if (masterTagihanObj.pakasirSlug) slug = masterTagihanObj.pakasirSlug;
            if (masterTagihanObj.pakasirApiKey) apiKey = masterTagihanObj.pakasirApiKey;
