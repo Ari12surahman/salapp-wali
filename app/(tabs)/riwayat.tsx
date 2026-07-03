@@ -141,7 +141,7 @@ export default function Riwayat() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
 
-        <Text style={tw`font-bold text-ink text-base mb-3`}>Mutasi Terakhir</Text>
+        <Text style={tw`font-bold text-ink text-base mb-3`}>Riwayat Transaksi</Text>
         <View style={tw`space-y-3`}>
           {historyData.length === 0 ? (
             <View style={tw`bg-canvas border border-whisper border-dashed rounded-2xl p-6 items-center`}>
