@@ -178,7 +178,16 @@ export const callGasAPI = async (action: string, data: any = {}) => {
               }
             } else {
               // Custom bill payment (no existing tagihan ID in bulk mode)
-              console.log("Pembayaran tagihan kustom:", item.tagihan, item.nominal);
+              await supabase.from('Tagihan').insert({
+                id: `TGH-CUST-${new Date().getTime()}-${Math.floor(Math.random() * 1000)}`,
+                tanggal: new Date().toISOString().split('T')[0],
+                nis: data.nis || 'UNKNOWN',
+                tagihan: item.tagihan,
+                periode: item.periode || '',
+                nominal: item.masterNominal > 0 ? item.masterNominal : item.nominal,
+                terbayar: item.nominal,
+                status: (item.masterNominal > 0 && item.nominal < item.masterNominal) ? 'Cicil' : 'Lunas'
+              });
             }
           }
         } else if (tagihanId) {

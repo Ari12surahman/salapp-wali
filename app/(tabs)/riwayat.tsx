@@ -30,7 +30,7 @@ export default function Riwayat() {
       if (cachedData && !isRefresh && dataTabungan.length === 0) {
         const parsed = JSON.parse(cachedData);
         setDataTabungan(parsed.Tabungan || []);
-        setDataPembayaran(parsed.Tagihan ? parsed.Tagihan.filter((t: any) => t.status === 'Lunas') : []);
+        setDataPembayaran(parsed.Tagihan ? parsed.Tagihan.filter((t: any) => t.status === 'Lunas' || t.status === 'Cicil') : []);
         setDataPesanan(parsed.Transaksi || []);
         setIsFetching(false);
       }
@@ -38,7 +38,7 @@ export default function Riwayat() {
       const res = await callGasAPI('getParentData', { nis: user.nis });
       const newTabungan = res.Tabungan || [];
       setDataTabungan(newTabungan);
-      setDataPembayaran(res.Tagihan ? res.Tagihan.filter((t: any) => t.status === 'Lunas') : []);
+      setDataPembayaran(res.Tagihan ? res.Tagihan.filter((t: any) => t.status === 'Lunas' || t.status === 'Cicil') : []);
       setDataPesanan(res.Transaksi || []);
       
       setOffsetTabungan(newTabungan.length);

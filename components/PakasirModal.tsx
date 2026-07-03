@@ -93,25 +93,82 @@ export default function PakasirModal() {
   const processPayment = async (method: string) => {
     setQrisState({ step: "LOADING", method, code: null, txId: null });
     
-    // Simulate API call to Pakasir
-    setTimeout(() => {
+    try {
       const orderId = `PKS-${Date.now()}`;
-      if (method === "qris") {
-        setQrisState({
-          step: "SHOW_QR",
-          method,
-          txId: orderId,
-          code: "00020101021226610016ID.CO.SHOPEE.WWW01189360091800216005230208216005230303UME51440014ID.CO.QRIS.WWW0215ID10243228429300303UME5204792953033605409100003.005802ID5907Pakasir6012KAB.KEBUMEN61055439262230519SP25RZRATEQI2HQ65Q46304A079",
-        });
-      } else {
-        setQrisState({
-          step: "SHOW_VA",
-          method,
-          txId: orderId,
-          code: `8888${user?.nis || "123456"}`,
-        });
+      
+      // Ambil slug dan apiKey dari MasterTagihan jika tersedia
+      let slug = "sunbox";
+      let apiKey = "xxx123";
+      
+      if (bulkData?.masterBills) {
+        // Coba cari master tagihan yang relevan dengan tipe pembayaran saat ini
+        let masterTagihanObj = null;
+        if (type === "BAYAR_TAGIHAN" && data?.tagihan) {
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan === data.tagihan);
+        } else if (type === "BAYAR_BEBAS" && selectedBulkItems.length > 0) {
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan === selectedBulkItems[0].tagihan);
+        } else if (type === "TOPUP_TABUNGAN") {
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan?.toLowerCase().includes("tabungan"));
+        }
+        
+        if (masterTagihanObj) {
+           if (masterTagihanObj.pakasirSlug) slug = masterTagihanObj.pakasirSlug;
+           if (masterTagihanObj.pakasirApiKey) apiKey = masterTagihanObj.pakasirApiKey;
+        }
       }
-    }, 1500);
+
+      const payload = {
+        slug,
+        apiKey,
+        amount: bayarAmount,
+        orderId: orderId,
+        method: method === "qris" ? "qris" : "va"
+      };
+
+      const res = await fetchPakasirProxy("requestPakasirPayment", payload);
+      
+      if (res && res.data && (res.data.qr_string || res.data.payment_code)) {
+        if (method === "qris") {
+          setQrisState({
+            step: "SHOW_QR",
+            method,
+            txId: orderId,
+            code: res.data.qr_string,
+          });
+        } else {
+          setQrisState({
+            step: "SHOW_VA",
+            method,
+            txId: orderId,
+            code: res.data.payment_code,
+          });
+        }
+        // Start polling
+        pollStatus(orderId, slug, apiKey);
+      } else {
+        throw new Error(res.error || "Gagal mendapatkan kode pembayaran");
+      }
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Error PG", e.message || "Koneksi ke Payment Gateway Gagal");
+      setQrisState({ step: "CHOOSE_METHOD", method: null, code: null, txId: null });
+    }
+  };
+
+  const pollStatus = (orderId: string, slug: string, apiKey: string) => {
+    if (pollingInterval) clearInterval(pollingInterval);
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetchPakasirProxy("pollPakasirStatus", { slug, apiKey, orderId });
+        if (res && res.data && res.data.status === "PAID") {
+          clearInterval(interval);
+          simulateSuccess(); // Panggil fungsi sukses
+        }
+      } catch (e) {
+        console.log("Polling error", e);
+      }
+    }, 5000);
+    setPollingInterval(interval);
   };
 
   const simulateSuccess = () => {
