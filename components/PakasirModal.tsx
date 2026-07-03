@@ -11,43 +11,22 @@ import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 
 const fetchPakasirDirect = async (action: string, payload: any) => {
-  if (action === 'requestPakasirPayment') {
-    const url = `https://${payload.slug}.pakasir.com/api/transaction/create`;
-    const res = await fetch(url, {
-      method: 'POST',
+  // Kita proxy ke Next.js API route yang ada di POS karena POS sudah mendukung CORS
+  // Ini menghindari error CORS di web client (Portal Wali)
+  try {
+    const res = await fetch("https://salapp-pos.vercel.app/api/pakasir", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': payload.apiKey
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        amount: payload.amount,
-        order_id: payload.orderId,
-        method: payload.method === 'qris' ? 'qris' : 'va'
-      })
+      body: JSON.stringify({ action, data: payload })
     });
-    
-    const responseText = await res.text();
-    try {
-      return JSON.parse(responseText);
-    } catch (e) {
-      return { error: responseText };
-    }
-  } else if (action === 'pollPakasirStatus') {
-    const url = `https://${payload.slug}.pakasir.com/api/transaction/status/${payload.orderId}`;
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': payload.apiKey
-      }
-    });
-    const responseText = await res.text();
-    try {
-      return JSON.parse(responseText);
-    } catch (e) {
-      return { error: responseText };
-    }
+    const result = await res.json();
+    return result;
+  } catch (e: any) {
+    console.error("fetchPakasir Proxy Error:", e);
+    return { error: e.message };
   }
-  return { error: "Unknown action" };
 };
 
 export default function PakasirModal() {
