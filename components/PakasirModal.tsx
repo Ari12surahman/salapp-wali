@@ -113,7 +113,6 @@ export default function PakasirModal() {
       let apiKey = "xxx123";
       
       if (bulkData?.masterBills && bulkData.masterBills.length > 0) {
-        // Coba cari master tagihan yang relevan dengan tipe pembayaran saat ini
         let masterTagihanObj = null;
         if (type === "BAYAR_TAGIHAN" && data?.tagihan) {
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === data.tagihan.toLowerCase());
@@ -125,12 +124,10 @@ export default function PakasirModal() {
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan?.toLowerCase().includes("jajan"));
         }
         
-        // Fallback: Gunakan kredensial pertama yang valid jika tidak ada match khusus
         if (!masterTagihanObj || !masterTagihanObj.pakasirSlug) {
-           masterTagihanObj = bulkData.masterBills.find((m: any) => m.pakasirSlug && m.pakasirSlug !== "sunbox");
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.pakasirSlug && m.pakasirSlug !== "sunbox" && !m.pakasirSlug.toLowerCase().includes("sandbox"));
         }
         
-        // Jika masih tidak ketemu, gunakan yang pertama ada
         if (!masterTagihanObj && bulkData.masterBills[0]) {
            masterTagihanObj = bulkData.masterBills[0];
         }
@@ -140,6 +137,8 @@ export default function PakasirModal() {
            if (masterTagihanObj.pakasirApiKey) apiKey = masterTagihanObj.pakasirApiKey;
         }
       }
+      
+      const isSandboxMode = slug.toLowerCase() === 'sunbox' || slug.toLowerCase().includes('sandbox') || slug.toLowerCase().includes('demo');
 
       const payload = {
         slug,
@@ -158,6 +157,7 @@ export default function PakasirModal() {
             method,
             txId: orderId,
             code: res.payment.payment_number,
+            isSandbox: isSandboxMode
           });
         } else {
           setQrisState({
@@ -165,6 +165,7 @@ export default function PakasirModal() {
             method,
             txId: orderId,
             code: res.payment.payment_number,
+            isSandbox: isSandboxMode
           });
         }
         // Start polling
@@ -715,9 +716,11 @@ export default function PakasirModal() {
                     <Text style={tw`text-xs text-accent font-medium mb-1`}>Total Bayar</Text>
                     <Text style={tw`text-xl font-bold text-ink`}>Rp {bayarAmount.toLocaleString("id-ID")}</Text>
                   </View>
-                  <TouchableOpacity onPress={simulateSuccess} style={tw`bg-accent px-4 py-2 rounded-xl`}>
-                    <Text style={tw`text-white text-xs font-bold`}>Simulasi Sukses</Text>
-                  </TouchableOpacity>
+                  {qrisState.isSandbox && (
+                    <TouchableOpacity onPress={simulateSuccess} style={tw`bg-accent px-4 py-2 rounded-xl`}>
+                      <Text style={tw`text-white text-xs font-bold`}>Simulasi Sukses</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 <TouchableOpacity onPress={() => setQrisState({ ...qrisState, step: "CHOOSE_METHOD" })} style={tw`flex-row items-center mb-8`}>
