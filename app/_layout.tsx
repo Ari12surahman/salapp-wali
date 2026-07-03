@@ -117,7 +117,16 @@ function setupForegroundFCM() {
           console.log('Foreground FCM:', payload);
           const title = payload.notification?.title || payload.data?.title || 'SalApp';
           const body = payload.notification?.body || payload.data?.body || '';
-          alert(`${title}\n${body}`);
+          
+          if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'granted') {
+              new Notification(title, { body, icon: '/icon.png' });
+            } else {
+              alert(`${title}\n${body}`);
+            }
+          } else {
+            alert(`${title}\n${body}`);
+          }
         });
       }
     } catch (e) {
