@@ -23,10 +23,15 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       try {
-        const token = await getToken(messaging, { vapidKey });
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const token = await getToken(messaging, { 
+          vapidKey,
+          serviceWorkerRegistration: registration 
+        });
         return token;
       } catch (tokenError: any) {
         alert('Gagal getToken: ' + tokenError.message);
+        console.error(tokenError);
         return null;
       }
     } else {
