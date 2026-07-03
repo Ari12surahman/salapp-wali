@@ -528,7 +528,13 @@ export default function PakasirModal() {
                         if (alreadyInList) return setFormError("Item ini sudah ada di daftar!");
 
                         const masterAmt = customItem.masterNominal > 0 ? customItem.masterNominal : amt;
-                        setSelectedBulkItems(prev => [...prev, { tagihan: customItem.tagihan, periode: fullPeriode, nominal: amt, masterNominal: masterAmt }]);
+                        setSelectedBulkItems(prev => [...prev, { 
+                          tagihanId: existingBill ? existingBill.id : undefined, 
+                          tagihan: customItem.tagihan, 
+                          periode: fullPeriode, 
+                          nominal: amt, 
+                          masterNominal: masterAmt 
+                        }]);
                         setCustomItem({ tagihan: "", bulan: "", tahun: new Date().getFullYear().toString(), nominal: "", masterNominal: 0 });
                       }}
                       style={tw`w-full bg-slate-200 py-2.5 rounded-xl items-center`}
