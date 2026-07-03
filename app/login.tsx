@@ -31,6 +31,21 @@ export default function Login() {
           nama: res.user.nama,
           appName: "Portal Wali Santri"
         }));
+        
+        // Request Push Notification permission here on user interaction
+        if (Platform.OS === 'web') {
+          try {
+            const { requestFirebaseWebPushPermission } = require('../utils/firebase');
+            const vapidKey = 'BHXv73pKzsflxNWQxYOQlYfntVGdQQp67JyuBVZ_JnHiuccXcrcWzGoFu5OQPe4VblqY3CDdXtjq8kNsTqjhOxc';
+            const token = await requestFirebaseWebPushPermission(vapidKey);
+            if (token) {
+              await callGasAPI('savePushToken', { nis: res.user.nis, token });
+            }
+          } catch (e) {
+            console.log('Firebase Web Push error on login:', e);
+          }
+        }
+        
         router.replace('/(tabs)/dashboard');
       } else {
         setError(res.message || 'Login gagal.');
