@@ -181,7 +181,7 @@ export default function PakasirModal() {
         apiKey,
         amount: bayarAmount,
         orderId: orderId,
-        method: method === "qris" ? "qris" : "va"
+        method: method
       };
 
       const res = await fetchPakasirDirect("requestPakasirPayment", payload);
