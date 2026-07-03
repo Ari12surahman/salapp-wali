@@ -34,7 +34,7 @@ export default function PakasirModal() {
   const { openReceipt } = useReceiptStore();
   const [user, setUser] = useState<any>(null);
 
-  const [bulkData, setBulkData] = useState<{ unpaidBills: any[], masterBills: any[], allTagihan?: any[] } | null>(null);
+  const [bulkData, setBulkData] = useState<{ unpaidBills: any[], masterBills: any[], allTagihan?: any[], pengaturan?: any[] } | null>(null);
   const [selectedBulkItems, setSelectedBulkItems] = useState<any[]>([]);
   const [customItem, setCustomItem] = useState({ tagihan: "", bulan: "", tahun: new Date().getFullYear().toString(), nominal: "", masterNominal: 0 });
   const [formError, setFormError] = useState("");
@@ -68,7 +68,12 @@ export default function PakasirModal() {
       try {
         const res = await callGasAPI("getParentData", { nis: parsedUser.nis });
         const unpaid = (res.Tagihan || []).filter((t: any) => Number(t.terbayar || 0) < Number(t.nominal || 0));
-        currentBulkData = { unpaidBills: unpaid, masterBills: res.MasterTagihan || [], allTagihan: res.Tagihan || [] };
+        currentBulkData = { 
+          unpaidBills: unpaid, 
+          masterBills: res.MasterTagihan || [], 
+          allTagihan: res.Tagihan || [],
+          pengaturan: res.Pengaturan || []
+        };
         setBulkData(currentBulkData);
       } catch (e) {
         console.error("Gagal mengambil data parent untuk Pakasir:", e);
@@ -125,7 +130,16 @@ export default function PakasirModal() {
         } else if (type === "TOPUP_TABUNGAN") {
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan?.toLowerCase().includes("tabungan"));
         } else if (type === "TITIP_JAJAN") {
-           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan?.toLowerCase().includes("jajan"));
+           // Khusus TITIP_JAJAN (Warung), gunakan kredensial POS dari tabel Pengaturan
+           if (bulkData.pengaturan) {
+             const dom = bulkData.pengaturan.find((p: any) => p.Kunci === "PAKASIR_DOMAIN" || p.Kunci === "pakasir_domain")?.Nilai;
+             const apiK = bulkData.pengaturan.find((p: any) => p.Kunci === "PAKASIR_APIKEY" || p.Kunci === "pakasir_apikey")?.Nilai;
+             if (dom) slug = dom;
+             if (apiK) apiKey = apiK;
+             
+             // Bypass masterTagihanObj search since we already have credentials
+             masterTagihanObj = { pakasirSlug: slug, pakasirApiKey: apiKey };
+           }
         }
         
         if (!masterTagihanObj || !masterTagihanObj.pakasirSlug) {
@@ -142,7 +156,7 @@ export default function PakasirModal() {
            masterTagihanObj = bulkData.masterBills[0];
         }
 
-        if (masterTagihanObj) {
+        if (masterTagihanObj && type !== "TITIP_JAJAN") {
            if (masterTagihanObj.pakasirSlug) slug = masterTagihanObj.pakasirSlug;
            if (masterTagihanObj.pakasirApiKey) apiKey = masterTagihanObj.pakasirApiKey;
         }
@@ -159,8 +173,8 @@ export default function PakasirModal() {
       const res = await fetchPakasirDirect("requestPakasirPayment", payload);
       
       if (res && res.payment && res.payment.payment_number) {
-        // Detect sandbox mode from the API response's QR Code String
-        const isSandboxServer = res.payment.payment_number.toUpperCase().includes('SANDBOX');
+        // Detect sandbox mode from the API response's QR Code String or VA dummy number
+        const isSandboxServer = res.payment.payment_number.toUpperCase().includes('SANDBOX') || res.payment.payment_number === '123123123';
 
         if (method === "qris") {
           setQrisState({

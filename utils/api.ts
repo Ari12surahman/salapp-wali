@@ -46,6 +46,8 @@ export const callGasAPI = async (action: string, data: any = {}) => {
         
         const { data: masterTagihan } = await supabase.from('MasterTagihan').select('tagihan, portalMenu, pakasirSlug, pakasirApiKey, nominal');
         
+        const { data: pengaturan } = await supabase.from('Pengaturan').select('Kunci, Nilai');
+        
         return {
           success: true,
           namaSantri: santriData?.nama || 'Santri',
@@ -57,7 +59,8 @@ export const callGasAPI = async (action: string, data: any = {}) => {
             portalMenu: typeof m.portalMenu === 'string' ? JSON.parse(m.portalMenu || '[]') : m.portalMenu
           })) : [],
           POS_Warung: warung || [],
-          POS_Produk: produk || []
+          POS_Produk: produk || [],
+          Pengaturan: pengaturan || []
         };
       }
       
