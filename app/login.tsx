@@ -36,7 +36,7 @@ export default function Login() {
         if (Platform.OS === 'web') {
           try {
             const { requestFirebaseWebPushPermission } = require('../utils/firebase');
-            const vapidKey = 'BHXv73pKzsflxNWQxYOQlYfntVGdQQp67JyuBVZ_JnHiuccXcrcWzGoFu5OQPe4VblqY3CDdXtjq8kNsTqjhOxc';
+            const vapidKey = 'BHXv73pKzsflxNWQxYOQlYfntVGdQQp67JyuBVZ_JnHiuccXcrcWzGoFu50QPe4VbIqY3CDdXtjq8kNsTqjh0xc';
             const token = await requestFirebaseWebPushPermission(vapidKey);
             if (token) {
               alert('Sukses! Token berhasil didapatkan.');
