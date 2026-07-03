@@ -116,7 +116,11 @@ export default function PakasirModal() {
         let masterTagihanObj = null;
         if (type === "BAYAR_TAGIHAN" && data?.tagihan) {
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === data.tagihan.toLowerCase());
-        } else if (type === "BAYAR_BEBAS" && selectedBulkItems.length > 0) {
+        } else if (type === "BAYAR_BEBAS" && selectedBulkItems.length > 1) {
+           // Jika bayar lebih dari 1 tagihan sekaligus, arahkan ke project 'Gabungan'
+           masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === "gabungan");
+        } else if (type === "BAYAR_BEBAS" && selectedBulkItems.length === 1) {
+           // Jika hanya bayar 1 tagihan, arahkan ke project spesifik tagihan tersebut
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === selectedBulkItems[0].tagihan.toLowerCase());
         } else if (type === "TOPUP_TABUNGAN") {
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan?.toLowerCase().includes("tabungan"));
