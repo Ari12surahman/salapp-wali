@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput, DeviceEventEmitter } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -120,47 +120,16 @@ export default function Dashboard() {
   useEffect(() => {
     if (!userData?.nis) return;
 
-    const channel = supabase
-      .channel(`public:Transaksi:SantriID=eq.${userData.nis}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'Transaksi',
-          filter: `SantriID=eq.${userData.nis}`
-        },
-        async (payload) => {
-          console.log('Realtime change received for Transaksi:', payload);
-          // Re-fetch pesanan aktif when there's an update
-          try {
-            const resPesanan = await callGasAPI("getPesananAktif", { nis: userData.nis });
-            if (resPesanan.success) {
-              const pesananTerbaru = resPesanan.data || [];
-              setDataPesananAktif(pesananTerbaru);
-              
-              // Update local cache
-              const cacheKey = `@parent_data_${userData.nis}`;
-              const cachedData = await AsyncStorage.getItem(cacheKey);
-              if (cachedData) {
-                const parsed = JSON.parse(cachedData);
-                await AsyncStorage.setItem(cacheKey, JSON.stringify({
-                  ...parsed,
-                  PesananAktif: pesananTerbaru
-                }));
-              }
-            }
-          } catch (e) {
-            console.error('Failed to sync realtime pesanan', e);
-          }
-        }
-      )
-      .subscribe();
+    // Listen for instant refresh from PakasirModal (instead of wasteful Supabase Realtime)
+    const subscription = DeviceEventEmitter.addListener('refresh_dashboard', () => {
+      console.log('Instant refresh received');
+      loadData(true); // background refresh
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      subscription.remove();
     };
-  }, [userData?.nis]);
+  }, [userData?.nis, loadData]);
 
   const onRefresh = () => {
     setRefreshing(true);

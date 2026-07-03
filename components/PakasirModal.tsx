@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Image, Alert, Platform } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Image, Alert, Platform, DeviceEventEmitter } from 'react-native';
 import { X, QrCode, CreditCard, ArrowLeft, Zap, Receipt, CheckCircle2, Download, Copy } from 'lucide-react-native';
 import tw from '../tailwind';
 import { usePakasirStore } from '../store/usePakasirStore';
@@ -161,6 +161,7 @@ export default function PakasirModal() {
         Alert.alert("Error", "Gagal mengirim pesanan. Periksa koneksi internet Anda.");
       }
       
+      DeviceEventEmitter.emit('refresh_dashboard');
       close();
       
       setTimeout(() => {
