@@ -169,19 +169,6 @@ export default function PakasirModal() {
            }
         }
         
-        if (!masterTagihanObj || !masterTagihanObj.pakasirSlug) {
-           // Fallback 1: Coba cari yang ada slug-nya (prioritaskan yang bukan sandbox jika ada, jika tidak ada baru gunakan sandbox)
-           masterTagihanObj = bulkData.masterBills.find((m: any) => m.pakasirSlug && m.pakasirSlug !== "sunbox" && !m.pakasirSlug.toLowerCase().includes("sandbox"));
-           
-           // Fallback 2: Jika semua adalah sandbox / sunbox
-           if (!masterTagihanObj) {
-             masterTagihanObj = bulkData.masterBills.find((m: any) => m.pakasirSlug);
-           }
-        }
-        
-        if (!masterTagihanObj && bulkData.masterBills[0]) {
-           masterTagihanObj = bulkData.masterBills[0];
-        }
 
         if (masterTagihanObj && type !== "TITIP_JAJAN") {
            if (masterTagihanObj.pakasirSlug) slug = masterTagihanObj.pakasirSlug;
