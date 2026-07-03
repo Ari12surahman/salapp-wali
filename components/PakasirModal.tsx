@@ -38,6 +38,33 @@ export default function PakasirModal() {
   const [selectedBulkItems, setSelectedBulkItems] = useState<any[]>([]);
   const [customItem, setCustomItem] = useState({ tagihan: "", bulan: "", tahun: new Date().getFullYear().toString(), nominal: "", masterNominal: 0 });
   const [formError, setFormError] = useState("");
+  
+  // Auto-fill nominal sisa atau block jika sudah lunas
+  useEffect(() => {
+    if (customItem.tagihan && customItem.bulan && customItem.tahun && bulkData?.allTagihan) {
+      const fullPeriode = `${customItem.bulan} ${customItem.tahun}`.trim();
+      const existingBill = bulkData.allTagihan.find((t: any) => 
+         String(t.tagihan).toLowerCase().trim() === String(customItem.tagihan).toLowerCase().trim() && 
+         String(t.periode || '').toLowerCase().trim() === String(fullPeriode).toLowerCase().trim()
+      );
+      
+      if (existingBill) {
+        const sisa = Number(existingBill.nominal) - Number(existingBill.terbayar || 0);
+        if (sisa <= 0) {
+           setFormError("Tagihan bulan ini sudah dibayar Lunas!");
+           setCustomItem(prev => ({...prev, nominal: ""}));
+        } else {
+           setFormError("");
+           // Auto-fill dengan sisa tagihan jika belum diubah secara manual
+           setCustomItem(prev => ({...prev, nominal: sisa.toLocaleString("id-ID")}));
+        }
+      } else {
+        setFormError("");
+      }
+    } else {
+      setFormError("");
+    }
+  }, [customItem.tagihan, customItem.bulan, customItem.tahun, bulkData]);
 
   const [topUpAmount, setTopUpAmount] = useState("");
   const [bayarAmount, setBayarAmount] = useState(0);
@@ -458,7 +485,7 @@ export default function PakasirModal() {
 
                     <View style={tw`flex-row gap-2 mb-3`}>
                       <View style={tw`flex-1`}>
-                        <Text style={tw`text-[10px] font-bold text-steel mb-1`}>Bulan (Opsional)</Text>
+                        <Text style={tw`text-[10px] font-bold text-steel mb-1`}>Bulan</Text>
                         <TouchableOpacity 
                           onPress={() => setQrisState({...qrisState, step: "SELECT_BULAN" as any})}
                           style={tw`w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 flex-row justify-between items-center`}
@@ -500,11 +527,12 @@ export default function PakasirModal() {
                       onPress={() => {
                         setFormError("");
                         if (!customItem.tagihan || !customItem.nominal) return setFormError("Pilih tagihan dan masukkan nominal!");
+                        if (!customItem.bulan) return setFormError("Bulan wajib dipilih!");
                         
-                        const fullPeriode = customItem.bulan ? `${customItem.bulan} ${customItem.tahun}`.trim() : '';
+                        const fullPeriode = `${customItem.bulan} ${customItem.tahun}`.trim();
                         
                         // Cek apakah tagihan ini sudah ada di database orang tua
-                        const existingBill = bulkData?.allTagihan?.find(t => 
+                        const existingBill = bulkData?.allTagihan?.find((t: any) => 
                            String(t.tagihan).toLowerCase().trim() === String(customItem.tagihan).toLowerCase().trim() && 
                            String(t.periode || '').toLowerCase().trim() === String(fullPeriode).toLowerCase().trim()
                         );
@@ -514,7 +542,7 @@ export default function PakasirModal() {
                         if (existingBill) {
                            const sisa = Number(existingBill.nominal) - Number(existingBill.terbayar || 0);
                            if (sisa <= 0) {
-                              return setFormError("Tagihan ini sudah lunas!");
+                              return setFormError("Tagihan bulan ini sudah dibayar Lunas!");
                            }
                            if (amt > sisa) {
                               amt = sisa;
