@@ -116,14 +116,14 @@ export const callGasAPI = async (action: string, data: any = {}) => {
       }
       
       case 'submitTitipJajan': {
-        const { warungId, items, total, catatan, nis } = data;
+        const { warungId, items, total, totalHarga, catatan, nis } = data;
         const trxId = `TRX-P-${new Date().getTime()}`;
         const { error } = await supabase.from('Transaksi').insert({
           TrxID: trxId,
           Waktu: new Date().toISOString(),
           SantriID: nis || 'UNKNOWN',
           WarungID: warungId || 'UNKNOWN',
-          TotalHarga: total,
+          TotalHarga: total || totalHarga || 0,
           Metode: 'Pesanan Online',
           StatusAmbil: 'Menunggu',
           Catatan: catatan || '',
