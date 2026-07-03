@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getMessaging, getToken, isSupported } from 'firebase/messaging';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBEA5DDdo4BIjpwjzciu1nFpmN_7sqPLRw',
+  apiKey: 'AIzaSyBrUfh63HTT3F7XvUmRnWd9KreV8FUmQFI',
   authDomain: 'salapp-ac39a.firebaseapp.com',
   projectId: 'salapp-ac39a',
   storageBucket: 'salapp-ac39a.firebasestorage.app',
