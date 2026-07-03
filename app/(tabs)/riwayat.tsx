@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
 import { callGasAPI } from '../../utils/api';
 import { useReceiptStore } from '../../store/useReceiptStore';
+import { supabase } from '../../utils/supabase';
 
 export default function Riwayat() {
   const [refreshing, setRefreshing] = useState(false);
@@ -30,7 +31,7 @@ export default function Riwayat() {
       if (cachedData && !isRefresh && dataTabungan.length === 0) {
         const parsed = JSON.parse(cachedData);
         setDataTabungan(parsed.Tabungan || []);
-        setDataPembayaran(parsed.Tagihan ? parsed.Tagihan.filter((t: any) => t.status === 'Lunas' || t.status === 'Cicil') : []);
+        setDataPembayaran(parsed.Pembayaran || []);
         setDataPesanan(parsed.Transaksi || []);
         setIsFetching(false);
       }
@@ -38,7 +39,7 @@ export default function Riwayat() {
       const res = await callGasAPI('getParentData', { nis: user.nis });
       const newTabungan = res.Tabungan || [];
       setDataTabungan(newTabungan);
-      setDataPembayaran(res.Tagihan ? res.Tagihan.filter((t: any) => t.status === 'Lunas' || t.status === 'Cicil') : []);
+      setDataPembayaran(res.Pembayaran || []);
       setDataPesanan(res.Transaksi || []);
       
       setOffsetTabungan(newTabungan.length);
@@ -49,7 +50,8 @@ export default function Riwayat() {
           ...(cachedData ? JSON.parse(cachedData) : {}),
           Tabungan: res.Tabungan || [],
           Tagihan: res.Tagihan || [],
-          Transaksi: res.Transaksi || []
+          Transaksi: res.Transaksi || [],
+          Pembayaran: res.Pembayaran || []
         }));
       }
     } catch (e) {
@@ -92,6 +94,36 @@ export default function Riwayat() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const setupRealtime = async () => {
+      const session = await SecureStore.getItemAsync('_parent_session');
+      if (!session) return;
+      const user = JSON.parse(session);
+
+      const channel = supabase
+        .channel(`riwayat-changes-${user.nis}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Pembayaran',
+            filter: `nis=eq.${user.nis}`,
+          },
+          (payload) => {
+            console.log('Realtime Pembayaran update:', payload);
+            loadData(true);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+    setupRealtime();
   }, []);
 
   const onRefresh = () => {

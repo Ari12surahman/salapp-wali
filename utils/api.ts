@@ -36,8 +36,8 @@ export const callGasAPI = async (action: string, data: any = {}) => {
         // Fetch all Tagihan for the student to ensure accurate payment matching
         const { data: tagihan } = await supabase.from('Tagihan').select('id, tanggal, tagihan, periode, nominal, terbayar, status').eq('nis', nis).order('tanggal', { ascending: false });
         const { data: tabungan } = await supabase.from('Tabungan').select('id, tanggal, jenis, nominal, keterangan').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
-        
         // Fetch Transaksi for history (all payments)
+        const { data: pembayaran } = await supabase.from('Pembayaran').select('*').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
         const { data: transaksi } = await supabase.from('Transaksi')
           .select('TrxID, Waktu, TotalHarga, StatusAmbil, Metode')
           .eq('SantriID', nis)
@@ -54,6 +54,7 @@ export const callGasAPI = async (action: string, data: any = {}) => {
           Tagihan: tagihan || [],
           Tabungan: tabungan || [],
           Transaksi: transaksi || [],
+          Pembayaran: pembayaran || [],
           MasterTagihan: masterTagihan ? masterTagihan.map(m => ({
             ...m,
             portalMenu: typeof m.portalMenu === 'string' ? JSON.parse(m.portalMenu || '[]') : m.portalMenu
@@ -178,6 +179,19 @@ export const callGasAPI = async (action: string, data: any = {}) => {
                   terbayar: totalTerbayar,
                   status: status
                 }).eq('id', item.tagihanId);
+                
+                await supabase.from('Pembayaran').insert({
+                  id: `INV-${Math.floor(Math.random() * 100000) + '-' + Date.now()}`,
+                  tanggal: new Date().toISOString().split('T')[0],
+                  nis: data.nis || 'UNKNOWN',
+                  nama: data.nama || '',
+                  tagihan: currentBill.tagihan || item.tagihan,
+                  periode: currentBill.periode || item.periode || '',
+                  nominal: item.nominal,
+                  status: status === 'Cicil' ? 'Cicilan' : 'Lunas',
+                  sisa: Math.max(0, currentBill.nominal - totalTerbayar),
+                  items: [{ tagihan: item.tagihan, periode: item.periode, nominal: item.nominal }]
+                });
               }
             } else {
               // Custom bill payment (no existing tagihan ID in bulk mode)
@@ -190,6 +204,19 @@ export const callGasAPI = async (action: string, data: any = {}) => {
                 nominal: item.masterNominal > 0 ? item.masterNominal : item.nominal,
                 terbayar: item.nominal,
                 status: (item.masterNominal > 0 && item.nominal < item.masterNominal) ? 'Cicil' : 'Lunas'
+              });
+              
+              await supabase.from('Pembayaran').insert({
+                  id: `INV-${Math.floor(Math.random() * 100000) + '-' + Date.now()}`,
+                  tanggal: new Date().toISOString().split('T')[0],
+                  nis: data.nis || 'UNKNOWN',
+                  nama: data.nama || '',
+                  tagihan: item.tagihan,
+                  periode: item.periode || '',
+                  nominal: item.nominal,
+                  status: (item.masterNominal > 0 && item.nominal < item.masterNominal) ? 'Cicilan' : 'Lunas',
+                  sisa: Math.max(0, (item.masterNominal > 0 ? item.masterNominal : item.nominal) - item.nominal),
+                  items: [{ tagihan: item.tagihan, periode: item.periode, nominal: item.nominal }]
               });
             }
           }
@@ -205,6 +232,19 @@ export const callGasAPI = async (action: string, data: any = {}) => {
               status: status
             }).eq('id', tagihanId);
             if (error) throw error;
+            
+            await supabase.from('Pembayaran').insert({
+                  id: `INV-${Math.floor(Math.random() * 100000) + '-' + Date.now()}`,
+                  tanggal: new Date().toISOString().split('T')[0],
+                  nis: data.nis || 'UNKNOWN',
+                  nama: data.nama || '',
+                  tagihan: currentBill.tagihan || '',
+                  periode: currentBill.periode || '',
+                  nominal: nominalBayar,
+                  status: status === 'Cicil' ? 'Cicilan' : 'Lunas',
+                  sisa: Math.max(0, currentBill.nominal - totalTerbayar),
+                  items: [{ tagihan: currentBill.tagihan, periode: currentBill.periode, nominal: nominalBayar }]
+            });
           }
         }
         return { success: true };

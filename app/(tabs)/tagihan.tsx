@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
 import { callGasAPI } from '../../utils/api';
 import { usePakasirStore } from '../../store/usePakasirStore';
+import { supabase } from '../../utils/supabase';
 
 export default function Tagihan() {
   const [refreshing, setRefreshing] = useState(false);
@@ -89,6 +90,37 @@ export default function Tagihan() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const setupRealtime = async () => {
+      const session = await SecureStore.getItemAsync('_parent_session');
+      if (!session) return;
+      const user = JSON.parse(session);
+
+      const channel = supabase
+        .channel(`tagihan-changes-${user.nis}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Tagihan',
+            filter: `nis=eq.${user.nis}`,
+          },
+          (payload) => {
+            console.log('Realtime Tagihan update:', payload);
+            // Refresh data gracefully instead of mutating locally for simplicity
+            loadData(true);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+    setupRealtime();
+  }, []);
+
   const onRefresh = () => {
     setRefreshing(true);
     loadData(true);
@@ -100,7 +132,7 @@ export default function Tagihan() {
       if (!masterConfig) return true;
       
       const portalMenu = masterConfig.portalMenu || [];
-      if (portalMenu.includes('Aplikasi POS') || portalMenu.includes('Sembunyikan') || portalMenu.includes('Menu Plus Portal')) {
+      if (portalMenu.includes('Aplikasi POS') || portalMenu.includes('Sembunyikan')) {
         return false;
       }
       return true;
