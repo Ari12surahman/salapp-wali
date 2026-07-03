@@ -19,7 +19,7 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || payload.data?.title || 'SalApp';
   const notificationOptions = {
     body: payload.notification?.body || payload.data?.body || 'Pemberitahuan baru',
-    icon: '/favicon.ico',
+    icon: '/icon.png',
     data: payload.data,
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
