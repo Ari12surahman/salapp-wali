@@ -333,18 +333,43 @@ export default function Dashboard() {
           <View style={tw`mb-6`}>
             <Text style={tw`font-bold text-ink text-base mb-3 ml-1`}>Status Pesanan</Text>
             {dataPesananAktif.map((order, idx) => {
-              const isSelesai = order.statusAmbil === "Selesai";
+              const statusRaw = order.StatusAmbil || order.statusAmbil || 'Menunggu';
+              const isSelesai = statusRaw === "Selesai";
+              const isDibatalkan = statusRaw === "Dibatalkan";
+              const isMenunggu = statusRaw === "Menunggu";
+              
+              let bgColor = 'bg-warningBg border-warning/30';
+              let iconBg = 'bg-warning';
+              let textColor = 'text-warning';
+              let label = 'Sedang Disiapkan';
+              
+              if (isSelesai) {
+                bgColor = 'bg-successBg border-success/30';
+                iconBg = 'bg-success';
+                textColor = 'text-success';
+                label = 'Telah Diambil Ananda';
+              } else if (isDibatalkan) {
+                bgColor = 'bg-dangerBg border-danger/30';
+                iconBg = 'bg-danger';
+                textColor = 'text-danger';
+                label = 'Pesanan Dibatalkan';
+              } else if (isMenunggu) {
+                label = 'Menunggu Konfirmasi Kantin';
+              } else {
+                label = `Pesanan ${statusRaw}`;
+              }
+              
               return (
-                <View key={idx} style={tw`border rounded-2xl p-4 shadow-sm flex-row items-center justify-between mb-3 ${isSelesai ? 'bg-successBg border-success/30' : 'bg-warningBg border-warning/30'}`}>
+                <View key={idx} style={tw`border rounded-2xl p-4 shadow-sm flex-row items-center justify-between mb-3 ${bgColor}`}>
                   <View style={tw`flex-row items-center flex-1`}>
-                    <View style={tw`w-10 h-10 rounded-full flex items-center justify-center ${isSelesai ? 'bg-success' : 'bg-warning'}`}>
+                    <View style={tw`w-10 h-10 rounded-full flex items-center justify-center ${iconBg}`}>
                       {isSelesai ? <CheckCircle2 color="white" size={20} /> : <Clock color="white" size={20} />}
                     </View>
                     <View style={tw`ml-3 flex-1`}>
                       <Text style={tw`font-bold text-ink text-sm`}>
-                        {isSelesai ? 'Telah Diambil Ananda' : 'Sedang Disiapkan'}
+                        {label}
                       </Text>
-                      <Text style={tw`text-[11px] font-medium mt-0.5 pr-2 ${isSelesai ? 'text-success' : 'text-warning'}`}>
+                      <Text style={tw`text-[11px] font-medium mt-0.5 pr-2 ${textColor}`}>
                         {order.items?.map((i:any) => i.qty + 'x ' + i.nama).join(', ')}
                       </Text>
                     </View>

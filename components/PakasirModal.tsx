@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Image, Alert, Platform } from 'react-native';
 import { X, QrCode, CreditCard, ArrowLeft, Zap, Receipt, CheckCircle2, Download, Copy } from 'lucide-react-native';
 import tw from '../tailwind';
 import { usePakasirStore } from '../store/usePakasirStore';
@@ -194,10 +194,12 @@ export default function PakasirModal() {
     }, 2000);
   };
 
+  const isWeb = Platform.OS === 'web';
+
   return (
     <Modal visible={isOpen} animationType="slide" transparent>
-      <View style={tw`flex-1 bg-ink/40 justify-end`}>
-        <View style={tw`bg-surface w-full rounded-t-[32px] max-h-[90%] flex-col overflow-hidden`}>
+      <View style={tw`flex-1 bg-ink/40 justify-end ${isWeb ? 'items-center' : ''}`}>
+        <View style={[tw`bg-surface w-full rounded-t-[32px] max-h-[90%] flex-col overflow-hidden`, isWeb && { maxWidth: 480 }]}>
           <ScrollView contentContainerStyle={tw`p-6 pb-20 relative`}>
             <TouchableOpacity onPress={close} style={tw`absolute top-6 right-6 z-50 w-8 h-8 bg-slate-100 rounded-full items-center justify-center`}>
               <X color={tw.color('steel')} size={16} />

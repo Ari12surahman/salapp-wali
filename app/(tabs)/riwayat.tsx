@@ -12,6 +12,7 @@ export default function Riwayat() {
   const [isFetching, setIsFetching] = useState(true);
   const [dataTabungan, setDataTabungan] = useState<any[]>([]);
   const [dataPembayaran, setDataPembayaran] = useState<any[]>([]);
+  const [dataPesanan, setDataPesanan] = useState<any[]>([]);
   const { openReceipt } = useReceiptStore();
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -30,6 +31,7 @@ export default function Riwayat() {
         const parsed = JSON.parse(cachedData);
         setDataTabungan(parsed.Tabungan || []);
         setDataPembayaran(parsed.Tagihan ? parsed.Tagihan.filter((t: any) => t.status === 'Lunas') : []);
+        setDataPesanan(parsed.Transaksi || []);
         setIsFetching(false);
       }
 
@@ -37,15 +39,17 @@ export default function Riwayat() {
       const newTabungan = res.Tabungan || [];
       setDataTabungan(newTabungan);
       setDataPembayaran(res.Tagihan ? res.Tagihan.filter((t: any) => t.status === 'Lunas') : []);
+      setDataPesanan(res.Transaksi || []);
       
       setOffsetTabungan(newTabungan.length);
       setHasMoreTabungan(newTabungan.length === 15);
       
-      if (res.Tabungan || res.Tagihan) {
+      if (res.Tabungan || res.Tagihan || res.Transaksi) {
         await AsyncStorage.setItem(cacheKey, JSON.stringify({
           ...(cachedData ? JSON.parse(cachedData) : {}),
           Tabungan: res.Tabungan || [],
-          Tagihan: res.Tagihan || []
+          Tagihan: res.Tagihan || [],
+          Transaksi: res.Transaksi || []
         }));
       }
     } catch (e) {
@@ -114,8 +118,10 @@ export default function Riwayat() {
     return new Date(0);
   };
 
-  const historyData = [...dataTabungan, ...dataPembayaran].sort((a, b) => {
-    return safeDate(b.tanggal).getTime() - safeDate(a.tanggal).getTime();
+  const historyData = [...dataTabungan, ...dataPembayaran, ...dataPesanan].sort((a, b) => {
+    const dateA = a.tanggal || a.Waktu;
+    const dateB = b.tanggal || b.Waktu;
+    return safeDate(dateB).getTime() - safeDate(dateA).getTime();
   });
 
   return (
@@ -145,36 +151,49 @@ export default function Riwayat() {
           ) : (
             historyData.map((item, idx) => {
               const isTabungan = !!item.jenis;
+              const isPesanan = !!item.TrxID;
               const isSetor = isTabungan && (item.jenis === "Setor" || item.jenis === "Masuk");
-              const title = isTabungan ? (item.keterangan || "Mutasi Tabungan") : (item.tagihan || "Pembayaran");
+              
+              let title = '';
+              if (isPesanan) title = `Titip Jajan (${item.StatusAmbil || item.statusAmbil})`;
+              else if (isTabungan) title = (item.keterangan || "Mutasi Tabungan");
+              else title = (item.tagihan || "Pembayaran");
+              
               const isIncome = isSetor;
-              const colorClass = isIncome ? 'success' : (isTabungan ? 'danger' : 'accent');
-              const bgColorClass = isIncome ? 'bg-successBg' : (isTabungan ? 'bg-dangerBg' : 'bg-accentLight');
+              const colorClass = isIncome ? 'success' : (isPesanan ? 'ink' : (isTabungan ? 'danger' : 'accent'));
+              const bgColorClass = isIncome ? 'bg-successBg' : (isPesanan ? 'bg-slate-100' : (isTabungan ? 'bg-dangerBg' : 'bg-accentLight'));
+              const dateStr = item.tanggal || item.Waktu;
+              const nominalNum = isPesanan ? item.TotalHarga : item.nominal;
 
               return (
                 <TouchableOpacity 
                   key={idx} 
-                  onPress={() => openReceipt({ ...item, title: isTabungan ? 'MUTASI TABUNGAN' : 'BUKTI PEMBAYARAN' })}
+                  onPress={() => {
+                     if (!isPesanan) openReceipt({ ...item, title: isTabungan ? 'MUTASI TABUNGAN' : 'BUKTI PEMBAYARAN' });
+                     // Boleh ditambahkan modal receipt khusus pesanan di sini nanti
+                  }}
                   style={tw`bg-white border border-whisper p-4 rounded-2xl flex-row items-center justify-between mb-3 shadow-sm active:bg-slate-50`}
                 >
                   <View style={tw`flex-row items-center flex-1`}>
                     <View style={tw`w-10 h-10 rounded-full flex items-center justify-center ${bgColorClass}`}>
                       {isTabungan ? (
                         isIncome ? <TrendingUp color={tw.color('success')} size={20} /> : <TrendingDown color={tw.color('danger')} size={20} />
+                      ) : isPesanan ? (
+                        <CheckCircle2 color={tw.color('steel')} size={20} />
                       ) : (
                         <FileText color={tw.color('accent')} size={20} />
                       )}
                     </View>
                     <View style={tw`ml-3 flex-1 pr-2`}>
                       <Text style={tw`font-bold text-ink text-sm`}>{title}</Text>
-                      <Text style={tw`text-[11px] text-steel font-medium mt-0.5`}>{safeDate(item.tanggal).toLocaleDateString('id-ID')}</Text>
+                      <Text style={tw`text-[11px] text-steel font-medium mt-0.5`}>{safeDate(dateStr).toLocaleDateString('id-ID')}</Text>
                     </View>
                   </View>
                   <View style={tw`items-end ml-2 flex-shrink-0 w-24`}>
                     <Text style={tw`font-bold text-sm mb-1 text-${colorClass}`} numberOfLines={1} adjustsFontSizeToFit>
-                      {isIncome ? '+' : '-'} Rp {Math.abs(Number(item.nominal) || 0).toLocaleString('id-ID')}
+                      {isIncome ? '+' : '-'} Rp {Math.abs(Number(nominalNum) || 0).toLocaleString('id-ID')}
                     </Text>
-                    <Text style={tw`text-[10px] text-steel`}>{isTabungan ? item.jenis : item.status}</Text>
+                    <Text style={tw`text-[10px] text-steel`}>{isTabungan ? item.jenis : (isPesanan ? item.Metode : item.status)}</Text>
                   </View>
                 </TouchableOpacity>
               );
