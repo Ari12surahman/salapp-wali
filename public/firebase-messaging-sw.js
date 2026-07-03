@@ -2,7 +2,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBrUfh63HTT3F7XvUmRnWd9KreV8FUmQFI',
+  apiKey: 'AIzaSyBEA5DDdo4BIjpwjzciu1nFpmN_7sqPLRw',
   authDomain: 'salapp-ac39a.firebaseapp.com',
   projectId: 'salapp-ac39a',
   storageBucket: 'salapp-ac39a.firebasestorage.app',
