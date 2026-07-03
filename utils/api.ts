@@ -34,7 +34,7 @@ export const callGasAPI = async (action: string, data: any = {}) => {
         const { data: produk } = await supabase.from('Produk').select('ID, Nama, HargaJual, WarungID, Status, Kategori');
         
         // LIMIT applied to Tagihan & Tabungan (max 15 on initial load)
-        const { data: tagihan } = await supabase.from('Tagihan').select('id, tagihan, periode, nominal, terbayar, status').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
+        const { data: tagihan } = await supabase.from('Tagihan').select('id, tanggal, tagihan, periode, nominal, terbayar, status').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
         const { data: tabungan } = await supabase.from('Tabungan').select('id, tanggal, jenis, nominal, keterangan').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
         
         // Fetch Transaksi for history (all payments)

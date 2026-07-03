@@ -155,7 +155,7 @@ export default function Riwayat() {
               const isSetor = isTabungan && (item.jenis === "Setor" || item.jenis === "Masuk");
               
               let title = '';
-              if (isPesanan) title = `Titip Jajan (${item.StatusAmbil || item.statusAmbil})`;
+              if (isPesanan) title = `Pembayaran Titip Jajan`;
               else if (isTabungan) title = (item.keterangan || "Mutasi Tabungan");
               else title = (item.tagihan || "Pembayaran");
               
@@ -169,8 +169,18 @@ export default function Riwayat() {
                 <TouchableOpacity 
                   key={idx} 
                   onPress={() => {
-                     if (!isPesanan) openReceipt({ ...item, title: isTabungan ? 'MUTASI TABUNGAN' : 'BUKTI PEMBAYARAN' });
-                     // Boleh ditambahkan modal receipt khusus pesanan di sini nanti
+                     if (isPesanan) {
+                       openReceipt({ 
+                         ...item, 
+                         title: 'BUKTI PEMBAYARAN',
+                         id: item.TrxID,
+                         tanggal: item.Waktu,
+                         tagihan: 'Titip Jajan',
+                         nominal: nominalNum
+                       });
+                     } else {
+                       openReceipt({ ...item, title: isTabungan ? 'MUTASI TABUNGAN' : 'BUKTI PEMBAYARAN' });
+                     }
                   }}
                   style={tw`bg-white border border-whisper p-4 rounded-2xl flex-row items-center justify-between mb-3 shadow-sm active:bg-slate-50`}
                 >
