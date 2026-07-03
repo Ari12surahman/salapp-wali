@@ -11,6 +11,13 @@ export default function ReceiptModal() {
 
   if (!isOpen || !data) return null;
 
+  let parsedItems: any[] = [];
+  try {
+    parsedItems = typeof data.items === 'string' ? JSON.parse(data.items) : (data.items || []);
+  } catch(e) {
+    parsedItems = [];
+  }
+
   const generateHtml = () => {
     return `
       <html>
@@ -68,10 +75,10 @@ export default function ReceiptModal() {
             </div>
             ` : ''}
 
-            ${data.items && data.items.length > 0 ? `
+            ${parsedItems && parsedItems.length > 0 ? `
               <div class="divider"></div>
               <div style="font-size: 12px; color: #64748B; margin-bottom: 10px; font-weight: bold;">Rincian Item:</div>
-              ${data.items.map(i => `
+              ${parsedItems.map(i => `
                 <div class="row" style="font-size: 13px;">
                   <div class="label">${i.tagihan || i.nama} ${i.periode ? `(${i.periode})` : ''}</div>
                   <div class="val">Rp ${(i.nominal || i.harga).toLocaleString('id-ID')}</div>
@@ -158,10 +165,10 @@ export default function ReceiptModal() {
                 </View>
               )}
               
-              {data.items && data.items.length > 0 && (
+              {parsedItems && parsedItems.length > 0 && (
                 <View style={tw`mt-2`}>
                   <Text style={tw`text-[10px] font-bold text-steel mb-2`}>Rincian Item:</Text>
-                  {data.items.map((i, idx) => (
+                  {parsedItems.map((i: any, idx: number) => (
                     <View key={idx} style={tw`flex-row justify-between mb-1 pl-2`}>
                       <Text style={tw`text-[11px] text-steel flex-1`}>• {i.tagihan || i.nama} {i.periode ? `(${i.periode})` : ''}</Text>
                       <Text style={tw`text-[11px] font-bold text-ink ml-2`}>Rp {(i.nominal || i.harga).toLocaleString("id-ID")}</Text>
