@@ -151,8 +151,8 @@ export default function ReceiptModal() {
                 <Text style={tw`text-xs font-bold text-ink`}>{data.nama || "-"}</Text>
               </View>
               <View style={tw`h-[1px] bg-whisper my-2 border border-dashed border-whisper`} />
-              {data.items && data.items.length > 0 ? (
-                data.items.map((item: any, idx: number) => (
+              {parsedItems && parsedItems.length > 0 ? (
+                parsedItems.map((item: any, idx: number) => (
                   <View key={idx} style={tw`flex-row justify-between mb-3`}>
                     <Text style={tw`text-xs text-steel flex-1`}>{item.tagihan || item.nama} {item.periode ? `(${item.periode})` : ''}</Text>
                     <Text style={tw`text-xs font-bold text-ink ml-2`}>Rp {(Number(item.nominal) || Number(item.harga) * Number(item.qty) || 0).toLocaleString("id-ID")}</Text>
