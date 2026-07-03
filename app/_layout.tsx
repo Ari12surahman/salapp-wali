@@ -117,10 +117,14 @@ function setupForegroundFCM() {
           console.log('Foreground FCM:', payload);
           const title = payload.notification?.title || payload.data?.title || 'SalApp';
           const body = payload.notification?.body || payload.data?.body || '';
-          
           if (typeof window !== 'undefined' && 'Notification' in window) {
             if (Notification.permission === 'granted') {
-              new Notification(title, { body, icon: '/icon.png' });
+              navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, { body, icon: '/icon.png' });
+              }).catch(err => {
+                console.log('SW notification failed:', err);
+                new Notification(title, { body, icon: '/icon.png' });
+              });
             } else {
               alert(`${title}\n${body}`);
             }
