@@ -269,7 +269,7 @@ export default function Dashboard() {
               <ArrowDownRight color="white" size={16} />
               <Text style={tw`text-white text-sm font-semibold ml-2`}>Top Up</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/riwayat')} style={tw`flex-1 bg-white/10 border border-white/10 py-3 rounded-xl flex-row justify-center items-center`}>
+            <TouchableOpacity onPress={() => router.push('/mutasi')} style={tw`flex-1 bg-white/10 border border-white/10 py-3 rounded-xl flex-row justify-center items-center`}>
               <TrendingUp color="white" size={16} />
               <Text style={tw`text-white text-sm font-semibold ml-2`}>Mutasi</Text>
             </TouchableOpacity>
