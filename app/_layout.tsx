@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform, Text, TextInput } from 'react-native';
+import { Platform, Text, TextInput, View } from 'react-native';
 
 interface TextWithDefaultProps extends Text {
     defaultProps?: { allowFontScaling?: boolean };
@@ -96,14 +96,35 @@ export default function RootLayout() {
     registerForPushNotificationsAsync();
   }, []);
 
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="login" />
-      </Stack>
-      <StatusBar style="auto" />
-    </>
+    <View style={{ flex: 1, backgroundColor: isWeb ? '#f4f4f5' : '#fff' }}>
+      <View
+        style={
+          isWeb
+            ? {
+                flex: 1,
+                maxWidth: 480,
+                marginHorizontal: 'auto',
+                width: '100%',
+                backgroundColor: '#fff',
+                shadowColor: '#000',
+                shadowOpacity: 0.05,
+                shadowRadius: 15,
+                elevation: 5,
+                overflow: 'hidden',
+              }
+            : { flex: 1 }
+        }
+      >
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="login" />
+        </Stack>
+        <StatusBar style="auto" />
+      </View>
+    </View>
   );
 }
