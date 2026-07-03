@@ -121,9 +121,11 @@ function setupForegroundFCM() {
             if (Notification.permission === 'granted') {
               navigator.serviceWorker.ready.then(registration => {
                 registration.showNotification(title, { body, icon: '/icon.png' });
+                alert(`${title}\n${body}`);
               }).catch(err => {
                 console.log('SW notification failed:', err);
                 new Notification(title, { body, icon: '/icon.png' });
+                alert(`${title}\n${body}`);
               });
             } else {
               alert(`${title}\n${body}`);
