@@ -25,13 +25,23 @@ export default function Riwayat() {
       const session = await SecureStore.getItemAsync('_parent_session');
       if (!session) return;
       const user = JSON.parse(session);
+
+      const combineHistory = (pems: any[], tags: any[]) => {
+        const combined = [...pems];
+        const lunasTags = tags ? tags.filter((t: any) => t.status === 'Lunas' || t.status === 'Cicil') : [];
+        lunasTags.forEach((tag: any) => {
+          const hasPem = pems.some(p => p.tagihan === tag.tagihan && p.periode === tag.periode);
+          if (!hasPem) combined.push(tag);
+        });
+        return combined;
+      };
       
       const cacheKey = `@parent_data_${user.nis}`;
       const cachedData = await AsyncStorage.getItem(cacheKey);
       if (cachedData && !isRefresh && dataTabungan.length === 0) {
         const parsed = JSON.parse(cachedData);
         setDataTabungan(parsed.Tabungan || []);
-        setDataPembayaran(parsed.Pembayaran || []);
+        setDataPembayaran(combineHistory(parsed.Pembayaran || [], parsed.Tagihan || []));
         setDataPesanan(parsed.Transaksi || []);
         setIsFetching(false);
       }
@@ -39,7 +49,7 @@ export default function Riwayat() {
       const res = await callGasAPI('getParentData', { nis: user.nis });
       const newTabungan = res.Tabungan || [];
       setDataTabungan(newTabungan);
-      setDataPembayaran(res.Pembayaran || []);
+      setDataPembayaran(combineHistory(res.Pembayaran || [], res.Tagihan || []));
       setDataPesanan(res.Transaksi || []);
       
       setOffsetTabungan(newTabungan.length);
