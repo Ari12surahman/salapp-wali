@@ -25,7 +25,11 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
       try {
         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         // Tunggu sampai service worker benar-benar 'active' (ready)
-        const activeRegistration = await navigator.serviceWorker.ready;
+        let activeRegistration = await navigator.serviceWorker.ready;
+        
+        // Tambahkan delay 2 detik untuk memastikan SW benar-benar sudah 'activated' di background
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        activeRegistration = await navigator.serviceWorker.ready;
         
         const token = await getToken(messaging, { 
           vapidKey,
