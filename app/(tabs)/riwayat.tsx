@@ -163,7 +163,7 @@ export default function Riwayat() {
               const colorClass = isIncome ? 'success' : (isPesanan ? 'ink' : (isTabungan ? 'danger' : 'accent'));
               const bgColorClass = isIncome ? 'bg-successBg' : (isPesanan ? 'bg-slate-100' : (isTabungan ? 'bg-dangerBg' : 'bg-accentLight'));
               const dateStr = item.tanggal || item.Waktu;
-              const nominalNum = isPesanan ? item.TotalHarga : item.nominal;
+              const nominalNum = isPesanan ? (item.TotalHarga || item.totalHarga || item.total || 0) : item.nominal;
 
               return (
                 <TouchableOpacity 

@@ -37,8 +37,13 @@ export const callGasAPI = async (action: string, data: any = {}) => {
         const { data: tagihan } = await supabase.from('Tagihan').select('id, tagihan, periode, nominal, terbayar, status').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
         const { data: tabungan } = await supabase.from('Tabungan').select('id, tanggal, jenis, nominal, keterangan').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
         
-        // Fetch Transaksi for history
-        const { data: transaksi } = await supabase.from('Transaksi').select('TrxID, Waktu, TotalHarga, StatusAmbil, Metode').eq('SantriID', nis).order('Waktu', { ascending: false }).limit(15);
+        // Fetch Transaksi for history (only completed/cancelled)
+        const { data: transaksi } = await supabase.from('Transaksi')
+          .select('TrxID, Waktu, TotalHarga, StatusAmbil, Metode')
+          .eq('SantriID', nis)
+          .in('StatusAmbil', ['Selesai', 'Dibatalkan'])
+          .order('Waktu', { ascending: false })
+          .limit(15);
         
         const { data: masterTagihan } = await supabase.from('MasterTagihan').select('tagihan, portalMenu, pakasirSlug, pakasirApiKey, nominal');
         
