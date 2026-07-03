@@ -24,9 +24,12 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
     if (permission === 'granted') {
       try {
         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        // Tunggu sampai service worker benar-benar 'active' (ready)
+        const activeRegistration = await navigator.serviceWorker.ready;
+        
         const token = await getToken(messaging, { 
           vapidKey,
-          serviceWorkerRegistration: registration 
+          serviceWorkerRegistration: activeRegistration 
         });
         return token;
       } catch (tokenError: any) {
