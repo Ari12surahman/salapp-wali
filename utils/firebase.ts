@@ -16,21 +16,25 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
   try {
     const supported = await isSupported();
     if (!supported) {
-      console.log('Firebase Messaging is not supported in this browser.');
+      alert('Browser tidak mendukung notifikasi Firebase (isSupported=false).');
       return null;
     }
     const messaging = getMessaging(app);
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      const token = await getToken(messaging, { vapidKey });
-      console.log('Firebase Web Push Token:', token);
-      return token;
+      try {
+        const token = await getToken(messaging, { vapidKey });
+        return token;
+      } catch (tokenError: any) {
+        alert('Gagal getToken: ' + tokenError.message);
+        return null;
+      }
     } else {
-      console.log('Notification permission not granted.');
+      alert('Izin notifikasi ditolak oleh browser (' + permission + ').');
       return null;
     }
-  } catch (error) {
-    console.error('Error getting push token', error);
+  } catch (error: any) {
+    alert('Error Firebase Init: ' + error.message);
     return null;
   }
 };
