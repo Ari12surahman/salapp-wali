@@ -16,10 +16,10 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification?.title || payload.data?.title || 'SalApp';
+  const notificationTitle = payload.data?.title || 'SalApp';
   const notificationOptions = {
-    body: payload.notification?.body || payload.data?.body || 'Pemberitahuan baru',
-    icon: '/icon.png',
+    body: payload.data?.body || 'Pemberitahuan baru',
+    icon: payload.data?.icon || '/icon.png',
     data: payload.data,
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
