@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Clock, TrendingUp, TrendingDown, RefreshCcw, ChevronLeft } from 'lucide-react-native';
-import * as SecureStore from './utils/storage';
+import * as SecureStore from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import tw from './tailwind';
-import { callGasAPI } from './utils/api';
-import { useReceiptStore } from './store/useReceiptStore';
+import tw from '../tailwind';
+import { callGasAPI } from '../utils/api';
+import { useReceiptStore } from '../store/useReceiptStore';
 
 export default function MutasiTabungan() {
   const [refreshing, setRefreshing] = useState(false);
