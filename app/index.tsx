@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { Redirect } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/storage';
 import tw from 'twrnc';
 
 export default function Index() {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/storage';
 import tw from '../tailwind';
 import { ShieldCheck, User, Lock, Eye, EyeOff, AlertCircle, ChevronRight } from 'lucide-react-native';
 import { callGasAPI } from '../utils/api';

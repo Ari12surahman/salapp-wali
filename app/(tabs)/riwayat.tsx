@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Clock, CheckCircle2, TrendingUp, TrendingDown, RefreshCcw, FileText } from 'lucide-react-native';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
 import { callGasAPI } from '../../utils/api';
@@ -134,9 +134,7 @@ export default function Riwayat() {
         contentContainerStyle={tw`p-6 pb-32`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={tw`flex-row justify-center items-center mb-4 mt-2`}>
-          <Text style={tw`text-[10px] text-steel/60 italic font-medium`}>↓ Tarik layar ke bawah untuk memperbarui</Text>
-        </View>
+
         <Text style={tw`font-bold text-ink text-base mb-3`}>Mutasi Terakhir</Text>
         <View style={tw`space-y-3`}>
           {historyData.length === 0 ? (

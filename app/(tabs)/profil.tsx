@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { User, Shield, LogOut, ChevronRight, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../../utils/storage';
 import tw from '../../tailwind';
 import { callGasAPI } from '../../utils/api';
 

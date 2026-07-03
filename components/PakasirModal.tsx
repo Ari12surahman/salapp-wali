@@ -5,7 +5,7 @@ import tw from '../tailwind';
 import { usePakasirStore } from '../store/usePakasirStore';
 import { callGasAPI } from '../utils/api';
 import { useReceiptStore } from '../store/useReceiptStore';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';

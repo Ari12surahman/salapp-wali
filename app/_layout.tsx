@@ -35,6 +35,8 @@ Notifications.setNotificationHandler({
 });
 
 async function registerForPushNotificationsAsync() {
+  if (Platform.OS === 'web') return;
+  
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
   
   if (isExpoGo) {

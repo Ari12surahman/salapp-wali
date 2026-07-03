@@ -81,7 +81,24 @@ export const callGasAPI = async (action: string, data: any = {}) => {
           .eq('SantriID', nis)
           .neq('StatusAmbil', 'Selesai');
           
-        return { success: true, data: pesanan || [] };
+        if (!pesanan || pesanan.length === 0) {
+          return { success: true, data: [] };
+        }
+        
+        const trxIds = pesanan.map(p => p.TrxID);
+        const { data: details } = await supabase
+          .from('DetailTransaksi')
+          .select('TrxID, NamaProduk, Kuantitas')
+          .in('TrxID', trxIds);
+          
+        const formattedPesanan = pesanan.map((p: any) => ({
+          ...p,
+          items: (details || [])
+            .filter((d: any) => d.TrxID === p.TrxID)
+            .map((d: any) => ({ nama: d.NamaProduk, qty: d.Kuantitas }))
+        }));
+          
+        return { success: true, data: formattedPesanan };
       }
 
       case 'savePushToken': {

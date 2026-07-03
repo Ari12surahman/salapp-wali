@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   Receipt, Wallet, TrendingUp, AlertCircle, ArrowRight, ArrowDownRight, 
@@ -176,9 +176,7 @@ export default function Dashboard() {
         contentContainerStyle={tw`p-6 pb-32`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={tw`flex-row justify-center items-center mb-4`}>
-          <Text style={tw`text-[10px] text-steel/60 italic font-medium`}>↓ Tarik layar ke bawah untuk memperbarui</Text>
-        </View>
+
         
         <View style={tw`flex-row justify-between items-center mb-6`}>
           <View>
@@ -301,7 +299,7 @@ export default function Dashboard() {
                         {isSelesai ? 'Telah Diambil Ananda' : 'Sedang Disiapkan'}
                       </Text>
                       <Text style={tw`text-[11px] font-medium mt-0.5 pr-2 ${isSelesai ? 'text-success' : 'text-warning'}`}>
-                        {order.items.map((i:any) => i.qty + 'x ' + i.nama).join(', ')}
+                        {order.items?.map((i:any) => i.qty + 'x ' + i.nama).join(', ')}
                       </Text>
                     </View>
                   </View>
