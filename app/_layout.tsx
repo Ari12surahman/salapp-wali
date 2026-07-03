@@ -91,6 +91,8 @@ async function registerForPushNotificationsAsync() {
   }
 }
 
+import AutoUpdater from '../components/AutoUpdater';
+
 export default function RootLayout() {
   useEffect(() => {
     registerForPushNotificationsAsync();
@@ -100,6 +102,7 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: isWeb ? '#f4f4f5' : '#fff' }}>
+      <AutoUpdater />
       <View
         style={
           isWeb
