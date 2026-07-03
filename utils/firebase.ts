@@ -7,7 +7,8 @@ const firebaseConfig = {
   projectId: 'salapp-ac39a',
   storageBucket: 'salapp-ac39a.firebasestorage.app',
   messagingSenderId: '34361910372',
-  appId: '1:34361910372:web:95d8ff8fce6d1d78cf6b71'
+  appId: '1:34361910372:web:20bc79723bb358f4cf6b71',
+  measurementId: 'G-VLWX18R8E3'
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
