@@ -1,9 +1,9 @@
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform, Text, TextInput, View } from 'react-native';
+import { Platform, Text, TextInput, View, DeviceEventEmitter, Animated, TouchableOpacity, StyleSheet, Image } from 'react-native';
 
 interface TextWithDefaultProps extends Text {
     defaultProps?: { allowFontScaling?: boolean };
@@ -121,17 +121,17 @@ function setupForegroundFCM() {
             if (Notification.permission === 'granted') {
               navigator.serviceWorker.ready.then(registration => {
                 registration.showNotification(title, { body, icon: '/icon.png' });
-                alert(`${title}\n${body}`);
+                DeviceEventEmitter.emit('showToast', { title, body });
               }).catch(err => {
                 console.log('SW notification failed:', err);
                 new Notification(title, { body, icon: '/icon.png' });
-                alert(`${title}\n${body}`);
+                DeviceEventEmitter.emit('showToast', { title, body });
               });
             } else {
-              alert(`${title}\n${body}`);
+              DeviceEventEmitter.emit('showToast', { title, body });
             }
           } else {
-            alert(`${title}\n${body}`);
+            DeviceEventEmitter.emit('showToast', { title, body });
           }
         });
       }
@@ -140,6 +140,92 @@ function setupForegroundFCM() {
     }
   }
 }
+
+const CustomToast = () => {
+  const [toast, setToast] = useState<{title: string, body: string} | null>(null);
+  const translateY = useRef(new Animated.Value(-100)).current;
+
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener('showToast', (data) => {
+      setToast(data);
+      Animated.spring(translateY, {
+        toValue: 20,
+        useNativeDriver: true,
+      }).start();
+
+      setTimeout(() => {
+        Animated.timing(translateY, {
+          toValue: -100,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => setToast(null));
+      }, 5000);
+    });
+    return () => listener.remove();
+  }, []);
+
+  if (!toast) return null;
+
+  return (
+    <Animated.View style={[styles.toastContainer, { transform: [{ translateY }] }]}>
+      <TouchableOpacity activeOpacity={0.8} style={styles.toastContent} onPress={() => {
+        Animated.timing(translateY, { toValue: -100, duration: 200, useNativeDriver: true }).start(() => setToast(null));
+      }}>
+        <Image source={require('../assets/icon.png')} style={styles.toastIcon} />
+        <View style={styles.toastTextContainer}>
+          <Text style={styles.toastTitle}>{toast.title}</Text>
+          <Text style={styles.toastBody} numberOfLines={2}>{toast.body}</Text>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+const styles = StyleSheet.create({
+  toastContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    alignItems: 'center'
+  },
+  toastContent: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#3498db'
+  },
+  toastIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    marginRight: 12
+  },
+  toastTextContainer: {
+    flex: 1
+  },
+  toastTitle: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4
+  },
+  toastBody: {
+    fontSize: 13,
+    color: '#666'
+  }
+});
 
 export default function RootLayout() {
   useEffect(() => {
@@ -176,6 +262,7 @@ export default function RootLayout() {
           <Stack.Screen name="login" />
         </Stack>
         <StatusBar style="auto" />
+        <CustomToast />
       </View>
     </View>
   );
