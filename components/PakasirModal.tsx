@@ -125,7 +125,13 @@ export default function PakasirModal() {
         }
         
         if (!masterTagihanObj || !masterTagihanObj.pakasirSlug) {
+           // Fallback 1: Coba cari yang ada slug-nya (prioritaskan yang bukan sandbox jika ada, jika tidak ada baru gunakan sandbox)
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.pakasirSlug && m.pakasirSlug !== "sunbox" && !m.pakasirSlug.toLowerCase().includes("sandbox"));
+           
+           // Fallback 2: Jika semua adalah sandbox / sunbox
+           if (!masterTagihanObj) {
+             masterTagihanObj = bulkData.masterBills.find((m: any) => m.pakasirSlug);
+           }
         }
         
         if (!masterTagihanObj && bulkData.masterBills[0]) {
@@ -138,8 +144,6 @@ export default function PakasirModal() {
         }
       }
       
-      const isSandboxMode = slug.toLowerCase() === 'sunbox' || slug.toLowerCase().includes('sandbox') || slug.toLowerCase().includes('demo');
-
       const payload = {
         slug,
         apiKey,
@@ -151,13 +155,16 @@ export default function PakasirModal() {
       const res = await fetchPakasirDirect("requestPakasirPayment", payload);
       
       if (res && res.payment && res.payment.payment_number) {
+        // Detect sandbox mode from the API response's QR Code String
+        const isSandboxServer = res.payment.payment_number.toUpperCase().includes('SANDBOX');
+
         if (method === "qris") {
           setQrisState({
             step: "SHOW_QR",
             method,
             txId: orderId,
             code: res.payment.payment_number,
-            isSandbox: isSandboxMode
+            isSandbox: isSandboxServer
           });
         } else {
           setQrisState({
@@ -165,7 +172,7 @@ export default function PakasirModal() {
             method,
             txId: orderId,
             code: res.payment.payment_number,
-            isSandbox: isSandboxMode
+            isSandbox: isSandboxServer
           });
         }
         // Start polling
