@@ -151,26 +151,26 @@ export default function PakasirModal() {
 
       const res = await fetchPakasirDirect("requestPakasirPayment", payload);
       
-      if (res && res.data && (res.data.qr_string || res.data.payment_code)) {
+      if (res && res.payment && res.payment.payment_number) {
         if (method === "qris") {
           setQrisState({
             step: "SHOW_QR",
             method,
             txId: orderId,
-            code: res.data.qr_string,
+            code: res.payment.payment_number,
           });
         } else {
           setQrisState({
             step: "SHOW_VA",
             method,
             txId: orderId,
-            code: res.data.payment_code,
+            code: res.payment.payment_number,
           });
         }
         // Start polling
         pollStatus(orderId, slug, apiKey);
       } else {
-        throw new Error(res.error || "Gagal mendapatkan kode pembayaran");
+        throw new Error(res.error || res.message || "Gagal mendapatkan kode pembayaran");
       }
     } catch (e: any) {
       console.error(e);
@@ -183,8 +183,8 @@ export default function PakasirModal() {
     if (pollingInterval) clearInterval(pollingInterval);
     const interval = setInterval(async () => {
       try {
-        const res = await fetchPakasirDirect("pollPakasirStatus", { slug, apiKey, orderId });
-        if (res && res.data && res.data.status === "PAID") {
+        const res = await fetchPakasirDirect("pollPakasirStatus", { slug, apiKey, orderId, amount: bayarAmount });
+        if (res && res.transaction && res.transaction.status === "completed") {
           clearInterval(interval);
           simulateSuccess(); // Panggil fungsi sukses
         }
