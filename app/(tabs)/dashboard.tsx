@@ -9,6 +9,7 @@ import {
 } from 'lucide-react-native';
 import tw from '../../tailwind';
 import { callGasAPI } from '../../utils/api';
+import { supabase } from '../../utils/supabase';
 import { usePakasirStore } from '../../store/usePakasirStore';
 
 export default function Dashboard() {
@@ -115,6 +116,51 @@ export default function Dashboard() {
       loadData();
     }, [loadData])
   );
+
+  useEffect(() => {
+    if (!userData?.nis) return;
+
+    const channel = supabase
+      .channel(`public:Transaksi:SantriID=eq.${userData.nis}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'Transaksi',
+          filter: `SantriID=eq.${userData.nis}`
+        },
+        async (payload) => {
+          console.log('Realtime change received for Transaksi:', payload);
+          // Re-fetch pesanan aktif when there's an update
+          try {
+            const resPesanan = await callGasAPI("getPesananAktif", { nis: userData.nis });
+            if (resPesanan.success) {
+              const pesananTerbaru = resPesanan.data || [];
+              setDataPesananAktif(pesananTerbaru);
+              
+              // Update local cache
+              const cacheKey = `@parent_data_${userData.nis}`;
+              const cachedData = await AsyncStorage.getItem(cacheKey);
+              if (cachedData) {
+                const parsed = JSON.parse(cachedData);
+                await AsyncStorage.setItem(cacheKey, JSON.stringify({
+                  ...parsed,
+                  PesananAktif: pesananTerbaru
+                }));
+              }
+            }
+          } catch (e) {
+            console.error('Failed to sync realtime pesanan', e);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userData?.nis]);
 
   const onRefresh = () => {
     setRefreshing(true);
