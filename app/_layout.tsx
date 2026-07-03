@@ -105,9 +105,31 @@ async function registerForPushNotificationsAsync() {
 
 import AutoUpdater from '../components/AutoUpdater';
 
+import { getApps, getApp } from 'firebase/app';
+import { getMessaging, onMessage } from 'firebase/messaging';
+
+function setupForegroundFCM() {
+  if (Platform.OS === 'web') {
+    try {
+      if (getApps().length > 0) {
+        const messaging = getMessaging(getApp());
+        onMessage(messaging, (payload) => {
+          console.log('Foreground FCM:', payload);
+          const title = payload.notification?.title || payload.data?.title || 'SalApp';
+          const body = payload.notification?.body || payload.data?.body || '';
+          alert(`${title}\n${body}`);
+        });
+      }
+    } catch (e) {
+      console.log('Error setup onMessage', e);
+    }
+  }
+}
+
 export default function RootLayout() {
   useEffect(() => {
     registerForPushNotificationsAsync();
+    setTimeout(setupForegroundFCM, 3000); // Give it time to initialize
   }, []);
 
   const isWeb = Platform.OS === 'web';
