@@ -375,7 +375,7 @@ export default function PakasirModal() {
 
             {type === "BAYAR_BEBAS" && !qrisState.step && bulkData && (
               <View style={tw`pt-2`}>
-                <Text style={tw`text-2xl font-extrabold text-ink mb-2`}>Pembayaran Massal</Text>
+                <Text style={tw`text-2xl font-extrabold text-ink mb-2`}>Pembayaran Massal v2</Text>
                 <Text style={tw`text-sm text-steel mb-6`}>Pilih tagihan yang ingin dibayar sekaligus.</Text>
                 
                 {bulkData.unpaidBills.length > 0 && (
