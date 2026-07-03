@@ -25,6 +25,7 @@ export default function PakasirModal() {
   const [bulkData, setBulkData] = useState<{ unpaidBills: any[], masterBills: any[], allTagihan?: any[] } | null>(null);
   const [selectedBulkItems, setSelectedBulkItems] = useState<any[]>([]);
   const [customItem, setCustomItem] = useState({ tagihan: "", bulan: "", tahun: new Date().getFullYear().toString(), nominal: "", masterNominal: 0 });
+  const [formError, setFormError] = useState("");
 
   const [topUpAmount, setTopUpAmount] = useState("");
   const [bayarAmount, setBayarAmount] = useState(0);
@@ -201,7 +202,7 @@ export default function PakasirModal() {
     <Modal visible={isOpen} animationType="slide" transparent>
       <View style={tw`flex-1 bg-ink/40 justify-end ${isWeb ? 'items-center' : ''}`}>
         <View style={[tw`bg-surface w-full rounded-t-[32px] max-h-[90%] flex-col overflow-hidden`, isWeb && { maxWidth: 480 }]}>
-          <ScrollView contentContainerStyle={tw`p-6 pb-20 relative`}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={tw`p-6 pb-20 relative`}>
             <TouchableOpacity onPress={close} style={tw`absolute top-6 right-6 z-50 w-8 h-8 bg-slate-100 rounded-full items-center justify-center`}>
               <X color={tw.color('steel')} size={16} />
             </TouchableOpacity>
@@ -386,9 +387,12 @@ export default function PakasirModal() {
                       }}
                     />
 
+                    {formError ? <Text style={tw`text-danger text-xs font-medium mb-3 text-center`}>{formError}</Text> : null}
+                    
                     <TouchableOpacity 
                       onPress={() => {
-                        if (!customItem.tagihan || !customItem.nominal) return Alert.alert("Error", "Pilih tagihan dan masukkan nominal!");
+                        setFormError("");
+                        if (!customItem.tagihan || !customItem.nominal) return setFormError("Pilih tagihan dan masukkan nominal!");
                         
                         const fullPeriode = customItem.bulan ? `${customItem.bulan} ${customItem.tahun}`.trim() : '';
                         
@@ -403,18 +407,18 @@ export default function PakasirModal() {
                         if (existingBill) {
                            const sisa = Number(existingBill.nominal) - Number(existingBill.terbayar || 0);
                            if (sisa <= 0) {
-                              return Alert.alert("Ditolak", "Tagihan ini sudah lunas!");
+                              return setFormError("Tagihan ini sudah lunas!");
                            }
                            if (amt > sisa) {
                               amt = sisa;
-                              Alert.alert("Info", `Nominal disesuaikan dengan sisa tagihan (Rp ${sisa.toLocaleString('id-ID')})`);
+                              // Auto-adjust, tapi jangan block process
                            }
                         }
 
-                        if (isNaN(amt) || amt < 1000) return Alert.alert("Error", "Nominal tidak valid!");
+                        if (isNaN(amt) || amt < 1000) return setFormError("Nominal tidak valid (Minimal Rp 1.000)!");
                         
                         const alreadyInList = selectedBulkItems.find(i => i.tagihan === customItem.tagihan && i.periode === fullPeriode);
-                        if (alreadyInList) return Alert.alert("Error", "Item ini sudah ada di daftar!");
+                        if (alreadyInList) return setFormError("Item ini sudah ada di daftar!");
 
                         const masterAmt = customItem.masterNominal > 0 ? customItem.masterNominal : amt;
                         setSelectedBulkItems(prev => [...prev, { tagihan: customItem.tagihan, periode: fullPeriode, nominal: amt, masterNominal: masterAmt }]);
