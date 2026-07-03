@@ -35,7 +35,19 @@ Notifications.setNotificationHandler({
 });
 
 async function registerForPushNotificationsAsync() {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web') {
+    try {
+      const { requestFirebaseWebPushPermission } = require('../utils/firebase');
+      const vapidKey = 'BHXv73pKzsflxNWQxYOQlYfntVGdQQp67JyuBVZ_JnHiuccXcrcWzGoFu5OQPe4VblqY3CDdXtjq8kNsTqjhOxc';
+      const token = await requestFirebaseWebPushPermission(vapidKey);
+      if (token) {
+        await AsyncStorage.setItem('_push_token', token);
+      }
+    } catch (e) {
+      console.log('Firebase Web Push error:', e);
+    }
+    return;
+  }
   
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
   

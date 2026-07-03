@@ -115,6 +115,12 @@ export const callGasAPI = async (action: string, data: any = {}) => {
       }
 
       case 'savePushToken': {
+        const { nis, token } = data;
+        if (!nis || !token) return { success: false, message: 'Missing nis or token' };
+        
+        const { error } = await supabase.from('Data Santri').update({ FCM_Token: token }).eq('nis', nis);
+        if (error) throw error;
+        
         return { success: true };
       }
       
