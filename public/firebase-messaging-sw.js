@@ -16,10 +16,17 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.data?.title || 'SalApp';
+  
+  // Jika payload sudah memiliki 'notification', Firebase secara otomatis akan memunculkan notifikasi.
+  // Kita tidak perlu memanggil showNotification lagi agar tidak dobel.
+  if (payload.notification) {
+    return;
+  }
+
+  const notificationTitle = payload.data?.title || 'SalApp Wali';
   const notificationOptions = {
     body: payload.data?.body || 'Pemberitahuan baru',
-    icon: payload.data?.icon || '/icon.png',
+    icon: payload.data?.icon || 'https://salapp-wali.vercel.app/icon.png',
     data: payload.data,
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
