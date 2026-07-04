@@ -16,12 +16,6 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  
-  // Jika payload sudah memiliki 'notification', Firebase secara otomatis akan memunculkan notifikasi.
-  // Kita tidak perlu memanggil showNotification lagi agar tidak dobel.
-  if (payload.notification) {
-    return;
-  }
 
   const notificationTitle = payload.data?.title || 'SalApp Wali';
   const notificationOptions = {
