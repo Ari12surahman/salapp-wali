@@ -20,7 +20,7 @@ export const loginOrangTua = async (nis: string, password: string) => {
   try {
     const { data, error } = await supabase
       .from('Data Santri')
-      .select('nis, nama, kelas, periode, Password')
+      .select('nis, nama, kelas, periode, password')
       .in('nis', nisVariants(nis));
 
     if (error || !data || data.length === 0) {
@@ -29,7 +29,7 @@ export const loginOrangTua = async (nis: string, password: string) => {
 
     const santri = data[0];
     // Default password adalah NIS jika belum diset
-    const savedPassword = santri.Password || nis;
+    const savedPassword = santri.password || nis;
     if (String(savedPassword).trim() !== String(password).trim()) {
       return { success: false, message: 'NIS atau Password salah' };
     }
@@ -250,7 +250,7 @@ export const gantiPasswordOrangTua = async (nis: string, oldPassword: string, ne
   try {
     const { data } = await supabase
       .from('Data Santri')
-      .select('nis, Password')
+      .select('nis, password')
       .in('nis', nisVariants(nis));
 
     if (!data || data.length === 0) {
@@ -258,12 +258,12 @@ export const gantiPasswordOrangTua = async (nis: string, oldPassword: string, ne
     }
 
     const santri = data[0];
-    const savedPass = santri.Password || nis;
+    const savedPass = santri.password || nis;
     if (String(savedPass).trim() !== String(oldPassword).trim()) {
       return { success: false, message: 'Password lama salah' };
     }
 
-    await supabase.from('Data Santri').update({ Password: newPassword }).eq('nis', santri.nis);
+    await supabase.from('Data Santri').update({ password: newPassword }).eq('nis', santri.nis);
     return { success: true, message: 'Password berhasil diubah' };
   } catch (e: any) {
     return { success: false, message: e.message };
