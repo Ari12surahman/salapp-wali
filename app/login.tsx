@@ -40,13 +40,12 @@ export default function Login() {
             const vapidKey = 'BHXv73pKzsflxNWQxYOQlYfntVGdQQp67JyuBVZ_JnHiuccXcrcWzGoFu50QPe4VbIqY3CDdXtjq8kNsTqjh0xc';
             const token = await requestFirebaseWebPushPermission(vapidKey);
             if (token) {
-              alert('Sukses! Token berhasil didapatkan.');
+              console.log('FCM Token berhasil didapatkan');
               await callGasAPI('savePushToken', { nis: res.user.nis, token });
             } else {
-              alert('Gagal mendapatkan token Firebase.');
+              console.log('Gagal mendapatkan token Firebase.');
             }
           } catch (e: any) {
-            alert('Error FCM: ' + e.message);
             console.log('Firebase Web Push error on login:', e);
           }
         }

@@ -17,29 +17,38 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
   try {
     const supported = await isSupported();
     if (!supported) {
-      alert('Browser tidak mendukung notifikasi Firebase (isSupported=false).');
+      console.log('Browser tidak mendukung Firebase Messaging.');
       return null;
     }
     const messaging = getMessaging(app);
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       try {
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        // Tunggu sampai service worker benar-benar 'active' (ready)
+        // Register service worker
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        
+        // Tunggu SW siap dengan retry
         let activeRegistration = await navigator.serviceWorker.ready;
         
-        // Tambahkan delay 2 detik untuk memastikan SW benar-benar sudah 'activated' di background
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        activeRegistration = await navigator.serviceWorker.ready;
-        
-        const token = await getToken(messaging, { 
-          vapidKey,
-          serviceWorkerRegistration: activeRegistration 
-        });
+        // Retry getToken up to 3 times (SW kadang belum siap di PWA baru)
+        let token = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1500 * attempt));
+            activeRegistration = await navigator.serviceWorker.ready;
+            token = await getToken(messaging, { 
+              vapidKey,
+              serviceWorkerRegistration: activeRegistration 
+            });
+            if (token) break;
+          } catch (retryError) {
+            console.log(`getToken attempt ${attempt} failed:`, retryError);
+            if (attempt === 3) throw retryError;
+          }
+        }
         return token;
       } catch (tokenError: any) {
-        alert('Gagal getToken: ' + tokenError.message);
-        console.error(tokenError);
+        console.error('Gagal getToken setelah retry:', tokenError);
         return null;
       }
     } else {
@@ -47,7 +56,7 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
       return null;
     }
   } catch (error: any) {
-    alert('Error Firebase Init: ' + error.message);
+    console.error('Error Firebase Init:', error);
     return null;
   }
 };
