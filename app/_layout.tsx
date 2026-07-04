@@ -140,6 +140,16 @@ export default function RootLayout() {
   useEffect(() => {
     registerForPushNotificationsAsync();
     setTimeout(setupForegroundFCM, 3000); // Give it time to initialize
+    
+    // Inject PWA manifest link for web
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      if (!document.querySelector('link[rel="manifest"]')) {
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = '/manifest.json';
+        document.head.appendChild(link);
+      }
+    }
   }, []);
 
   const isWeb = Platform.OS === 'web';
