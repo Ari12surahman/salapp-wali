@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from '../utils/storage';
 import tw from '../tailwind';
 import { ShieldCheck, User, Lock, Eye, EyeOff, AlertCircle, ChevronRight } from 'lucide-react-native';
-import { callGasAPI } from '../utils/api';
+import { loginOrangTua, savePushToken } from '../utils/supabaseApi';
 import InstallPWA from '../components/InstallPWA';
 
 export default function Login() {
@@ -25,7 +25,7 @@ export default function Login() {
     setError('');
 
     try {
-      const res = await callGasAPI('loginOrangTua', { nis, password });
+      const res = await loginOrangTua(nis, password);
       if (res.success && res.user) {
         await SecureStore.setItemAsync('_parent_session', JSON.stringify({
           nis: res.user.nis,
@@ -33,7 +33,7 @@ export default function Login() {
           appName: "Portal Wali Santri"
         }));
         
-        // Request Push Notification permission here on user interaction
+        // Request Push Notification permission setelah login (on user interaction)
         if (Platform.OS === 'web') {
           try {
             const { requestFirebaseWebPushPermission } = require('../utils/firebase');
@@ -41,7 +41,7 @@ export default function Login() {
             const token = await requestFirebaseWebPushPermission(vapidKey);
             if (token) {
               console.log('FCM Token berhasil:', token.substring(0, 20) + '...');
-              await callGasAPI('savePushToken', { nis: res.user.nis, token });
+              await savePushToken(res.user.nis, token);
             } else {
               console.log('Token null - kemungkinan permission denied atau SW gagal');
             }

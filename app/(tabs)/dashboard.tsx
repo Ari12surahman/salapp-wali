@@ -8,7 +8,7 @@ import {
   ShieldCheck, ShoppingBag, BookOpen, Users, Heart, X, Store, CheckCircle2, Clock, LogOut 
 } from 'lucide-react-native';
 import tw from '../../tailwind';
-import { callGasAPI } from '../../utils/api';
+import { getParentData, savePushToken } from '../../utils/supabaseApi';
 import { supabase } from '../../utils/supabase';
 import { usePakasirStore } from '../../store/usePakasirStore';
 
@@ -40,31 +40,12 @@ export default function Dashboard() {
       const user = JSON.parse(session);
       setUserData(user);
 
-      // 0. Sync Push Token ke Backend SETIAP kali app dibuka
-      // (Token di spreadsheet bisa terhapus oleh sync Admin, jadi harus selalu dikirim ulang)
+      // 0. Sync Push Token ke Supabase SETIAP kali app dibuka
       const pushToken = await AsyncStorage.getItem('_push_token');
       if (pushToken && !isBackground) {
-        // Simpan ke GAS (Google Sheets)
-        callGasAPI('savePushToken', { nis: user.nis, token: pushToken })
-          .then(res => {
-            if (res.success) console.log('✅ Push token synced to GAS');
-          })
+        savePushToken(user.nis, pushToken)
+          .then(() => console.log('✅ Push token synced'))
           .catch(console.error);
-        
-        // Simpan JUGA ke Supabase Data Santri supaya API notifikasi bisa baca
-        supabase
-          .from('Data Santri')
-          .update({ FCM_Token: pushToken })
-          .eq('nis', user.nis)
-          .then(({ error }) => {
-            if (error) {
-              // Coba match NIS tanpa leading zeros
-              const cleanNis = String(user.nis).replace(/^0+/, '');
-              supabase.from('Data Santri').update({ FCM_Token: pushToken }).eq('nis', cleanNis).then();
-            } else {
-              console.log('✅ Push token synced to Supabase');
-            }
-          });
       }
 
       // 1. Coba ambil dari Cache Lokal dulu biar instan
@@ -93,7 +74,7 @@ export default function Dashboard() {
 
       // 2. Fetch data terbaru secara diam-diam (silent update)
       const [res] = await Promise.all([
-        callGasAPI('getParentData', { nis: user.nis }),
+        getParentData(user.nis),
       ]);
 
       // 3. Update UI dengan data terbaru

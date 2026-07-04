@@ -4,7 +4,7 @@ import { Clock, CheckCircle2, TrendingUp, TrendingDown, RefreshCcw, FileText } f
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
-import { callGasAPI } from '../../utils/api';
+import { getParentData, getRiwayatTabungan } from '../../utils/supabaseApi';
 import { useReceiptStore } from '../../store/useReceiptStore';
 import { supabase } from '../../utils/supabase';
 
@@ -46,7 +46,7 @@ export default function Riwayat() {
         setIsFetching(false);
       }
 
-      const res = await callGasAPI('getParentData', { nis: user.nis });
+      const res = await getParentData(user.nis);
       const newTabungan = res.Tabungan || [];
       setDataTabungan(newTabungan);
       setDataPembayaran(combineHistory(res.Pembayaran || [], res.Tagihan || []));
@@ -80,7 +80,7 @@ export default function Riwayat() {
       if (!session) return;
       const user = JSON.parse(session);
       
-      const res = await callGasAPI('getRiwayatTabungan', { nis: user.nis, offset: offsetTabungan });
+      const res = await getRiwayatTabungan(user.nis, offsetTabungan);
       const moreData = res.data || [];
       
       if (moreData.length > 0) {

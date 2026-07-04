@@ -4,7 +4,7 @@ import { User, Shield, LogOut, ChevronRight, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
 import tw from '../../tailwind';
-import { callGasAPI } from '../../utils/api';
+import { gantiPasswordOrangTua } from '../../utils/supabaseApi';
 
 export default function Profil() {
   const router = useRouter();
@@ -36,11 +36,7 @@ export default function Profil() {
     }
     setIsChangingPassword(true);
     try {
-      const res = await callGasAPI('gantiPasswordOrangTua', { 
-        nis: userData?.nis, 
-        oldPassword, 
-        newPassword 
-      });
+      const res = await gantiPasswordOrangTua(userData?.nis || '', oldPassword, newPassword);
       if (res.success) {
         Alert.alert('Berhasil', 'Password berhasil diubah!');
         setIsPasswordModalOpen(false);

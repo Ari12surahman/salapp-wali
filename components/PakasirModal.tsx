@@ -3,7 +3,7 @@ import { Modal, View, Text, TouchableOpacity, TextInput, ScrollView, ActivityInd
 import { X, QrCode, CreditCard, ArrowLeft, Zap, Receipt, CheckCircle2, Download, Copy } from 'lucide-react-native';
 import tw from '../tailwind';
 import { usePakasirStore } from '../store/usePakasirStore';
-import { callGasAPI } from '../utils/api';
+import { getParentData, submitPembayaranQRIS, submitTopUpTabungan, submitTitipJajan } from '../utils/supabaseApi';
 import { useReceiptStore } from '../store/useReceiptStore';
 import * as SecureStore from '../utils/storage';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -94,7 +94,7 @@ export default function PakasirModal() {
       // Selalu fetch parent data untuk mendapatkan masterBills (slug & apiKey Pakasir)
       let currentBulkData = null;
       try {
-        const res = await callGasAPI("getParentData", { nis: parsedUser.nis });
+        const res = await getParentData(parsedUser.nis);
         const unpaid = (res.Tagihan || []).filter((t: any) => Number(t.terbayar || 0) < Number(t.nominal || 0));
         currentBulkData = { 
           unpaidBills: unpaid, 
@@ -281,7 +281,7 @@ export default function PakasirModal() {
     setTimeout(async () => {
       try {
         if (type === "BAYAR_TAGIHAN") {
-          await callGasAPI("submitPembayaranQRIS", {
+          await submitPembayaranQRIS({
             nis: user?.nis,
             nama: user?.nama,
             tagihanId: data?.id,
@@ -290,14 +290,14 @@ export default function PakasirModal() {
             transactionId: qrisState.txId,
           });
         } else if (type === "TOPUP_TABUNGAN") {
-          await callGasAPI("submitTopUpTabungan", {
+          await submitTopUpTabungan({
             nis: user?.nis,
             nama: user?.nama,
             nominalSetor: bayarAmount,
             transactionId: qrisState.txId,
           });
         } else if (type === "BAYAR_BEBAS") {
-          await callGasAPI("submitPembayaranQRIS", {
+          await submitPembayaranQRIS({
             nis: user?.nis,
             nama: user?.nama,
             tagihanId: "BULK",
@@ -307,7 +307,7 @@ export default function PakasirModal() {
           });
         } else if (type === "TITIP_JAJAN") {
           // REVERT TO ORIGINAL APPSCRIPT CALL
-          await callGasAPI("submitTitipJajan", {
+          await submitTitipJajan({
             nis: user?.nis,
             nama: user?.nama,
             warungId: data?.warungId,

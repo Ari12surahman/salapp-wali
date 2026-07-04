@@ -5,7 +5,7 @@ import * as SecureStore from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import tw from '../tailwind';
-import { callGasAPI } from '../utils/api';
+import { getParentData, getRiwayatTabungan } from '../utils/supabaseApi';
 import { useReceiptStore } from '../store/useReceiptStore';
 
 export default function MutasiTabungan() {
@@ -32,7 +32,7 @@ export default function MutasiTabungan() {
         setIsFetching(false);
       }
 
-      const res = await callGasAPI('getParentData', { nis: user.nis });
+      const res = await getParentData(user.nis);
       const newTabungan = res.Tabungan || [];
       setDataTabungan(newTabungan);
       
@@ -63,7 +63,7 @@ export default function MutasiTabungan() {
       if (!session) return;
       const user = JSON.parse(session);
       
-      const res = await callGasAPI('getRiwayatTabungan', { nis: user.nis, offset: offsetTabungan });
+      const res = await getRiwayatTabungan(user.nis, offsetTabungan);
       const moreData = res.data || [];
       
       if (moreData.length > 0) {

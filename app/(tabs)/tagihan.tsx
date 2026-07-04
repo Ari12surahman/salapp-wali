@@ -4,7 +4,7 @@ import { Receipt, AlertCircle, CheckCircle2 } from 'lucide-react-native';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
-import { callGasAPI } from '../../utils/api';
+import { getParentData, getRiwayatTagihan } from '../../utils/supabaseApi';
 import { usePakasirStore } from '../../store/usePakasirStore';
 import { supabase } from '../../utils/supabase';
 
@@ -33,7 +33,7 @@ export default function Tagihan() {
         setIsFetching(false);
       }
 
-      const res = await callGasAPI('getParentData', { nis: user.nis });
+      const res = await getParentData(user.nis);
       setDataMasterTagihan(res.MasterTagihan || []);
       const newTagihan = res.Tagihan || [];
       setDataTagihan(newTagihan);
@@ -63,7 +63,7 @@ export default function Tagihan() {
       if (!session) return;
       const user = JSON.parse(session);
       
-      const res = await callGasAPI('getRiwayatTagihan', { nis: user.nis, offset: offsetTagihan });
+      const res = await getRiwayatTagihan(user.nis, offsetTagihan);
       const moreData = res.data || [];
       
       if (moreData.length > 0) {
