@@ -44,11 +44,27 @@ export default function Dashboard() {
       // (Token di spreadsheet bisa terhapus oleh sync Admin, jadi harus selalu dikirim ulang)
       const pushToken = await AsyncStorage.getItem('_push_token');
       if (pushToken && !isBackground) {
+        // Simpan ke GAS (Google Sheets)
         callGasAPI('savePushToken', { nis: user.nis, token: pushToken })
           .then(res => {
-            if (res.success) console.log('✅ Push token synced');
+            if (res.success) console.log('✅ Push token synced to GAS');
           })
           .catch(console.error);
+        
+        // Simpan JUGA ke Supabase Data Santri supaya API notifikasi bisa baca
+        supabase
+          .from('Data Santri')
+          .update({ FCM_Token: pushToken })
+          .eq('nis', user.nis)
+          .then(({ error }) => {
+            if (error) {
+              // Coba match NIS tanpa leading zeros
+              const cleanNis = String(user.nis).replace(/^0+/, '');
+              supabase.from('Data Santri').update({ FCM_Token: pushToken }).eq('nis', cleanNis).then();
+            } else {
+              console.log('✅ Push token synced to Supabase');
+            }
+          });
       }
 
       // 1. Coba ambil dari Cache Lokal dulu biar instan
