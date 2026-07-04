@@ -17,20 +17,28 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
   try {
     const supported = await isSupported();
     if (!supported) {
-      console.log('Browser tidak mendukung Firebase Messaging.');
+      alert('DEBUG 1: Browser tidak support FCM');
       return null;
     }
+    
+    // Cek status izin saat ini SEBELUM meminta
+    const currentPermission = Notification.permission;
+    alert('DEBUG 2: Status izin saat ini = "' + currentPermission + '"');
+    
+    if (currentPermission === 'denied') {
+      alert('DEBUG 3: Izin DIBLOKIR. Bapak perlu membuka Pengaturan HP > Aplikasi > SalApp Wali (atau Chrome) > Notifikasi > Izinkan');
+      return null;
+    }
+    
     const messaging = getMessaging(app);
     const permission = await Notification.requestPermission();
+    alert('DEBUG 4: Hasil requestPermission = "' + permission + '"');
+    
     if (permission === 'granted') {
       try {
-        // Register service worker
         await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        
-        // Tunggu SW siap dengan retry
         let activeRegistration = await navigator.serviceWorker.ready;
         
-        // Retry getToken up to 3 times (SW kadang belum siap di PWA baru)
         let token = null;
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
@@ -41,22 +49,22 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
               serviceWorkerRegistration: activeRegistration 
             });
             if (token) break;
-          } catch (retryError) {
-            console.log(`getToken attempt ${attempt} failed:`, retryError);
+          } catch (retryError: any) {
+            alert('DEBUG 5: Retry ' + attempt + ' gagal: ' + retryError.message);
             if (attempt === 3) throw retryError;
           }
         }
         return token;
       } catch (tokenError: any) {
-        console.error('Gagal getToken setelah retry:', tokenError);
+        alert('DEBUG 6: getToken gagal total: ' + tokenError.message);
         return null;
       }
     } else {
-      console.log('Izin notifikasi ditolak oleh browser (' + permission + ').');
+      alert('DEBUG 7: Permission bukan granted, hasilnya: ' + permission);
       return null;
     }
   } catch (error: any) {
-    console.error('Error Firebase Init:', error);
+    alert('DEBUG 8: Error fatal: ' + error.message);
     return null;
   }
 };
