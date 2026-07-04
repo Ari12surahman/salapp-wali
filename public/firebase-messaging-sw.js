@@ -21,7 +21,7 @@ messaging.onBackgroundMessage((payload) => {
   const notificationOptions = {
     body: payload.data?.body || 'Pemberitahuan baru',
     icon: payload.data?.icon || 'https://salapp-wali.vercel.app/icon.png',
-    badge: 'https://salapp-wali.vercel.app/icon.png',
+    badge: 'https://salapp-wali.vercel.app/notification-icon.png',
     data: payload.data,
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
