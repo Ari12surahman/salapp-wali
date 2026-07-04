@@ -17,22 +17,12 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
   try {
     const supported = await isSupported();
     if (!supported) {
-      alert('DEBUG 1: Browser tidak support FCM');
-      return null;
-    }
-    
-    // Cek status izin saat ini SEBELUM meminta
-    const currentPermission = Notification.permission;
-    alert('DEBUG 2: Status izin saat ini = "' + currentPermission + '"');
-    
-    if (currentPermission === 'denied') {
-      alert('DEBUG 3: Izin DIBLOKIR. Bapak perlu membuka Pengaturan HP > Aplikasi > SalApp Wali (atau Chrome) > Notifikasi > Izinkan');
+      console.log('Browser tidak mendukung Firebase Messaging.');
       return null;
     }
     
     const messaging = getMessaging(app);
     const permission = await Notification.requestPermission();
-    alert('DEBUG 4: Hasil requestPermission = "' + permission + '"');
     
     if (permission === 'granted') {
       try {
@@ -50,21 +40,21 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
             });
             if (token) break;
           } catch (retryError: any) {
-            alert('DEBUG 5: Retry ' + attempt + ' gagal: ' + retryError.message);
+            console.log(`getToken attempt ${attempt} failed:`, retryError);
             if (attempt === 3) throw retryError;
           }
         }
         return token;
       } catch (tokenError: any) {
-        alert('DEBUG 6: getToken gagal total: ' + tokenError.message);
+        console.error('Gagal getToken setelah retry:', tokenError);
         return null;
       }
     } else {
-      alert('DEBUG 7: Permission bukan granted, hasilnya: ' + permission);
+      console.log('Izin notifikasi ditolak oleh browser (' + permission + ').');
       return null;
     }
   } catch (error: any) {
-    alert('DEBUG 8: Error fatal: ' + error.message);
+    console.error('Error Firebase Init:', error);
     return null;
   }
 };

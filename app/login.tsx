@@ -41,17 +41,12 @@ export default function Login() {
             const token = await requestFirebaseWebPushPermission(vapidKey);
             if (token) {
               console.log('FCM Token berhasil:', token.substring(0, 20) + '...');
-              const saveResult = await callGasAPI('savePushToken', { nis: res.user.nis, token });
-              console.log('Save token result:', JSON.stringify(saveResult));
-              // DEBUG: temporarily show status
-              alert('✅ Notifikasi aktif! Token tersimpan.');
+              await callGasAPI('savePushToken', { nis: res.user.nis, token });
             } else {
               console.log('Token null - kemungkinan permission denied atau SW gagal');
-              alert('⚠️ Token tidak didapat. Cek izin notifikasi di pengaturan browser.');
             }
           } catch (e: any) {
             console.log('Firebase Web Push error on login:', e);
-            alert('❌ Error FCM: ' + e.message);
           }
         }
         
