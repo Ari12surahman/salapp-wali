@@ -9,6 +9,7 @@ import * as SecureStore from '../utils/storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
+import { supabase } from '../utils/supabase';
 
 const fetchPakasirDirect = async (action: string, payload: any) => {
   // Kita proxy ke Next.js API route yang ada di POS karena POS sudah mendukung CORS
@@ -183,6 +184,46 @@ export default function PakasirModal() {
         orderId: orderId,
         method: method
       };
+
+      // Save to PakasirOrders for Webhook support
+      let dbPayload: any = {
+        orderId: orderId,
+        method: method,
+        amount: bayarAmount,
+        tagihanData: data,
+        isBulk: false
+      };
+      
+      let webhookTipe = 'TAGIHAN_PORTAL';
+
+      if (type === 'TITIP_JAJAN') {
+        webhookTipe = 'POS';
+        dbPayload = {
+          orderId: orderId,
+          method: method,
+          santriId: user?.nis,
+          total: bayarAmount,
+          warungId: data?.warungId || 'WRG-KANTIN',
+          statusAmbil: 'Selesai',
+          items: data?.items?.map((item: any) => ({
+            id: item.id || `ITM-${Date.now()}`,
+            nama: item.nama,
+            harga: item.harga,
+            qty: item.qty
+          })) || []
+        };
+      }
+
+      try {
+        await supabase.from('PakasirOrders').upsert([{
+          order_id: orderId,
+          tipe: webhookTipe,
+          status: 'PENDING',
+          payload: dbPayload
+        }]);
+      } catch (err) {
+        console.error("Error saving pending order to Supabase:", err);
+      }
 
       const res = await fetchPakasirDirect("requestPakasirPayment", payload);
       
