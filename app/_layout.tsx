@@ -120,6 +120,9 @@ function setupForegroundFCM() {
           
           const title = payload.notification?.title || payload.data?.title || 'SalApp';
           const body = payload.notification?.body || payload.data?.body || '';
+          
+          // Debug alert untuk testing
+          alert("DEBUG NOTIFIKASI!\n" + title + "\n" + body);
           if (typeof window !== 'undefined' && 'Notification' in window) {
             if (Notification.permission === 'granted') {
               navigator.serviceWorker.ready.then(registration => {
