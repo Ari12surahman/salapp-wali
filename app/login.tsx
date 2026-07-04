@@ -24,6 +24,25 @@ export default function Login() {
     setLoading(true);
     setError('');
 
+    let fcmToken = null;
+    
+    // Request Push Notification permission di awal sebelum await apapun (untuk mematuhi user gesture browser)
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          const { requestFirebaseWebPushPermission } = require('../utils/firebase');
+          const vapidKey = 'BHXv73pKzsflxNWQxYOQlYfntVGdQQp67JyuBVZ_JnHiuccXcrcWzGoFu50QPe4VbIqY3CDdXtjq8kNsTqjh0xc';
+          fcmToken = await requestFirebaseWebPushPermission(vapidKey);
+          if (fcmToken) {
+            await AsyncStorage.setItem('_push_token', fcmToken);
+          }
+        }
+      } catch (e) {
+        console.log('Firebase Web Push error on login:', e);
+      }
+    }
+
     try {
       const res = await loginOrangTua(nis, password);
       if (res.success && res.user) {
@@ -33,21 +52,9 @@ export default function Login() {
           appName: "Portal Wali Santri"
         }));
         
-        // Request Push Notification permission setelah login (on user interaction)
-        if (Platform.OS === 'web') {
-          try {
-            const { requestFirebaseWebPushPermission } = require('../utils/firebase');
-            const vapidKey = 'BHXv73pKzsflxNWQxYOQlYfntVGdQQp67JyuBVZ_JnHiuccXcrcWzGoFu50QPe4VbIqY3CDdXtjq8kNsTqjh0xc';
-            const token = await requestFirebaseWebPushPermission(vapidKey);
-            if (token) {
-              console.log('FCM Token berhasil:', token.substring(0, 20) + '...');
-              await savePushToken(res.user.nis, token);
-            } else {
-              console.log('Token null - kemungkinan permission denied atau SW gagal');
-            }
-          } catch (e: any) {
-            console.log('Firebase Web Push error on login:', e);
-          }
+        if (fcmToken) {
+          console.log('Menyimpan FCM Token baru...');
+          await savePushToken(res.user.nis, fcmToken);
         }
         
         router.replace('/(tabs)/dashboard');
