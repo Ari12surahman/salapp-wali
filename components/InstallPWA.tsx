@@ -64,20 +64,15 @@ export default function InstallPWA() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    paddingTop: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
     alignItems: 'center',
     width: '100%',
   },
   button: {
     flexDirection: 'row',
     backgroundColor: '#3b82f6', // Biru
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: 20,
     alignItems: 'center',
     width: '100%',
     justifyContent: 'center',

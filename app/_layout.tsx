@@ -146,7 +146,6 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: isWeb ? '#f4f4f5' : '#fff' }}>
-      <InstallPWA />
       <AutoUpdater />
       <View
         style={

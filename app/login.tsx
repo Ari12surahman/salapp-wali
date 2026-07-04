@@ -5,6 +5,7 @@ import * as SecureStore from '../utils/storage';
 import tw from '../tailwind';
 import { ShieldCheck, User, Lock, Eye, EyeOff, AlertCircle, ChevronRight } from 'lucide-react-native';
 import { callGasAPI } from '../utils/api';
+import InstallPWA from '../components/InstallPWA';
 
 export default function Login() {
   const router = useRouter();
@@ -145,6 +146,10 @@ export default function Login() {
             </View>
           </TouchableOpacity>
           
+          <View style={tw`mt-6 w-full`}>
+            <InstallPWA />
+          </View>
+
           <Text style={tw`text-center text-slate-500 text-xs font-medium mt-8`}>
             Password default adalah NIS santri jika belum diubah.
           </Text>
