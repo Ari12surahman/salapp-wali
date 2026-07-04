@@ -43,7 +43,7 @@ export const requestFirebaseWebPushPermission = async (vapidKey: string) => {
         return null;
       }
     } else {
-      alert('Izin notifikasi ditolak oleh browser (' + permission + ').');
+      console.log('Izin notifikasi ditolak oleh browser (' + permission + ').');
       return null;
     }
   } catch (error: any) {

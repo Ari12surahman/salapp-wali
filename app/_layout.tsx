@@ -135,6 +135,8 @@ function setupForegroundFCM() {
   }
 }
 
+import PermissionGuard from '../components/PermissionGuard';
+
 export default function RootLayout() {
   useEffect(() => {
     registerForPushNotificationsAsync();
@@ -144,33 +146,35 @@ export default function RootLayout() {
   const isWeb = Platform.OS === 'web';
 
   return (
-    <View style={{ flex: 1, backgroundColor: isWeb ? '#f4f4f5' : '#fff' }}>
-      <AutoUpdater />
-      <View
-        style={
-          isWeb
-            ? {
-                flex: 1,
-                maxWidth: 480,
-                marginHorizontal: 'auto',
-                width: '100%',
-                backgroundColor: '#fff',
-                shadowColor: '#000',
-                shadowOpacity: 0.05,
-                shadowRadius: 15,
-                elevation: 5,
-                overflow: 'hidden',
-              }
-            : { flex: 1 }
-        }
-      >
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="login" />
-        </Stack>
-        <StatusBar style="auto" />
+    <PermissionGuard>
+      <View style={{ flex: 1, backgroundColor: isWeb ? '#f4f4f5' : '#fff' }}>
+        <AutoUpdater />
+        <View
+          style={
+            isWeb
+              ? {
+                  flex: 1,
+                  maxWidth: 480,
+                  marginHorizontal: 'auto',
+                  width: '100%',
+                  backgroundColor: '#fff',
+                  shadowColor: '#000',
+                  shadowOpacity: 0.05,
+                  shadowRadius: 15,
+                  elevation: 5,
+                  overflow: 'hidden',
+                }
+              : { flex: 1 }
+          }
+        >
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="login" />
+          </Stack>
+          <StatusBar style="auto" />
+        </View>
       </View>
-    </View>
+    </PermissionGuard>
   );
 }
