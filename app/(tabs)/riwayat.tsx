@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import { Clock, CheckCircle2, TrendingUp, TrendingDown, RefreshCcw, FileText } from 'lucide-react-native';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -107,33 +107,14 @@ export default function Riwayat() {
   }, []);
 
   useEffect(() => {
-    const setupRealtime = async () => {
-      const session = await SecureStore.getItemAsync('_parent_session');
-      if (!session) return;
-      const user = JSON.parse(session);
+    const subscription = DeviceEventEmitter.addListener('refresh_dashboard', () => {
+      console.log('Instant refresh received in riwayat');
+      loadData(true);
+    });
 
-      const channel = supabase
-        .channel(`riwayat-changes-${user.nis}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'Pembayaran',
-            filter: `nis=eq.${user.nis}`,
-          },
-          (payload) => {
-            console.log('Realtime Pembayaran update:', payload);
-            loadData(true);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+    return () => {
+      subscription.remove();
     };
-    setupRealtime();
   }, []);
 
   const onRefresh = () => {

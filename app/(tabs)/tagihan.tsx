@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { Receipt, AlertCircle, CheckCircle2 } from 'lucide-react-native';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -91,34 +91,14 @@ export default function Tagihan() {
   }, []);
 
   useEffect(() => {
-    const setupRealtime = async () => {
-      const session = await SecureStore.getItemAsync('_parent_session');
-      if (!session) return;
-      const user = JSON.parse(session);
+    const subscription = DeviceEventEmitter.addListener('refresh_dashboard', () => {
+      console.log('Instant refresh received in tagihan');
+      loadData(true);
+    });
 
-      const channel = supabase
-        .channel(`tagihan-changes-${user.nis}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'Tagihan',
-            filter: `nis=eq.${user.nis}`,
-          },
-          (payload) => {
-            console.log('Realtime Tagihan update:', payload);
-            // Refresh data gracefully instead of mutating locally for simplicity
-            loadData(true);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+    return () => {
+      subscription.remove();
     };
-    setupRealtime();
   }, []);
 
   const onRefresh = () => {

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform, Text, TextInput, View } from 'react-native';
+import { Platform, Text, TextInput, View, DeviceEventEmitter } from 'react-native';
 
 interface TextWithDefaultProps extends Text {
     defaultProps?: { allowFontScaling?: boolean };
@@ -116,6 +116,8 @@ function setupForegroundFCM() {
         const messaging = getMessaging(getApp());
         onMessage(messaging, (payload) => {
           console.log('Foreground FCM:', payload);
+          DeviceEventEmitter.emit('refresh_dashboard');
+          
           const title = payload.notification?.title || payload.data?.title || 'SalApp';
           const body = payload.notification?.body || payload.data?.body || '';
           if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -140,6 +142,12 @@ export default function RootLayout() {
   useEffect(() => {
     registerForPushNotificationsAsync();
     setTimeout(setupForegroundFCM, 3000); // Give it time to initialize
+
+    // Listen for Expo native push notifications in foreground
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Native Foreground Push Received:', notification);
+      DeviceEventEmitter.emit('refresh_dashboard');
+    });
     
     // Inject PWA manifest link for web
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -150,6 +158,10 @@ export default function RootLayout() {
         document.head.appendChild(link);
       }
     }
+
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener);
+    };
   }, []);
 
   const isWeb = Platform.OS === 'web';
