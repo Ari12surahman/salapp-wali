@@ -76,9 +76,8 @@ export default function Dashboard() {
       }
 
       // 2. Fetch data terbaru secara diam-diam (silent update)
-      const [res, resPesanan] = await Promise.all([
+      const [res] = await Promise.all([
         callGasAPI('getParentData', { nis: user.nis }),
-        callGasAPI("getPesananAktif", { nis: user.nis })
       ]);
 
       // 3. Update UI dengan data terbaru
@@ -92,7 +91,34 @@ export default function Dashboard() {
         setActiveWarungId(warungs[0].id || warungs[0].ID || "");
       }
       
-      const pesananAktif = resPesanan.success ? (resPesanan.data || []) : [];
+      // Query pesanan aktif langsung dari Supabase (mendukung order dari webhook maupun polling)
+      const kemarin = new Date();
+      kemarin.setDate(kemarin.getDate() - 1);
+      const { data: transaksiData } = await supabase
+        .from('Transaksi')
+        .select('*')
+        .eq('SantriID', user.nis)
+        .eq('Metode', 'Pesanan Online')
+        .gte('Waktu', kemarin.toISOString())
+        .order('Waktu', { ascending: false })
+        .limit(10);
+
+      let pesananAktif: any[] = [];
+      if (transaksiData && transaksiData.length > 0) {
+        const trxIds = transaksiData.map((t: any) => t.TrxID);
+        const { data: detailData } = await supabase
+          .from('DetailTransaksi')
+          .select('*')
+          .in('TrxID', trxIds);
+        
+        pesananAktif = transaksiData.map((t: any) => ({
+          ...t,
+          statusAmbil: t.StatusAmbil,
+          items: (detailData || [])
+            .filter((d: any) => d.TrxID === t.TrxID)
+            .map((d: any) => ({ qty: d.Kuantitas, nama: d.NamaProduk }))
+        }));
+      }
       setDataPesananAktif(pesananAktif);
 
       // 4. Simpan ke Cache untuk dipakai waktu buka aplikasi berikutnya
