@@ -104,6 +104,7 @@ async function registerForPushNotificationsAsync() {
 }
 
 import AutoUpdater from '../components/AutoUpdater';
+import InstallPWA from '../components/InstallPWA';
 
 import { getApps, getApp } from 'firebase/app';
 import { getMessaging, onMessage } from 'firebase/messaging';
@@ -145,6 +146,7 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: isWeb ? '#f4f4f5' : '#fff' }}>
+      <InstallPWA />
       <AutoUpdater />
       <View
         style={
