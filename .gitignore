@@ -41,6 +41,7 @@ yarn-error.*
 !app.json
 !tsconfig.json
 !eas.json
+!public/manifest.json
 
 # service accounts
 google-services.json
