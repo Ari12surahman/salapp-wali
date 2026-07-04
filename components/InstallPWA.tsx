@@ -37,7 +37,10 @@ export default function InstallPWA() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      alert('Untuk menginstal secara manual: Klik ikon Titik Tiga (⋮) di pojok kanan atas Chrome, lalu pilih "Tambahkan ke Layar Utama".\n\nBagi pengguna iPhone (Safari): Klik tombol Bagikan (Share) di bawah, lalu pilih "Tambah ke Layar Utama".');
+      return;
+    }
     
     // Tampilkan pop-up instalasi asli bawaan browser
     deferredPrompt.prompt();
@@ -49,8 +52,8 @@ export default function InstallPWA() {
     setDeferredPrompt(null);
   };
 
-  // Jangan tampilkan apapun jika aplikasi sudah terinstal atau prompt belum tersedia (biasanya butuh beberapa detik / interaksi user)
-  if (isInstalled || !deferredPrompt) return null;
+  // Jangan tampilkan apapun jika aplikasi sudah terinstal (terbuka di layar utama)
+  if (isInstalled) return null;
 
   return (
     <View style={styles.container}>
