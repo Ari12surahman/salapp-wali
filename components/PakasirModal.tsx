@@ -677,19 +677,24 @@ export default function PakasirModal() {
                   <Text style={tw`font-bold text-ink text-sm`}>QRIS (Gopay, OVO, Dana)</Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity onPress={() => processPayment("bni_va")} style={tw`w-full flex-row items-center p-5 border border-whisper rounded-[20px] mb-3`}>
-                  <View style={tw`w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-4`}>
-                    <CreditCard color="#ea580c" size={20} />
-                  </View>
-                  <Text style={tw`font-bold text-ink text-sm`}>BNI Virtual Account</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => processPayment("bri_va")} style={tw`w-full flex-row items-center p-5 border border-whisper rounded-[20px] mb-3`}>
-                  <View style={tw`w-10 h-10 rounded-full bg-blue-50 items-center justify-center mr-4`}>
-                    <CreditCard color="#1d4ed8" size={20} />
-                  </View>
-                  <Text style={tw`font-bold text-ink text-sm`}>BRI Virtual Account</Text>
-                </TouchableOpacity>
+                {[
+                  { id: 'bni_va', name: 'BNI Virtual Account', color: 'bg-orange-50', iconColor: '#ea580c' },
+                  { id: 'bri_va', name: 'BRI Virtual Account', color: 'bg-blue-50', iconColor: '#1d4ed8' },
+                  { id: 'cimb_niaga_va', name: 'CIMB Niaga VA', color: 'bg-red-50', iconColor: '#dc2626' },
+                  { id: 'permata_va', name: 'Permata VA', color: 'bg-green-50', iconColor: '#16a34a' },
+                  { id: 'maybank_va', name: 'Maybank VA', color: 'bg-yellow-50', iconColor: '#ca8a04' },
+                  { id: 'bnc_va', name: 'BNC Virtual Account', color: 'bg-slate-50', iconColor: '#475569' },
+                  { id: 'sampoerna_va', name: 'Sahabat Sampoerna VA', color: 'bg-orange-50', iconColor: '#f97316' },
+                  { id: 'artha_graha_va', name: 'Artha Graha VA', color: 'bg-blue-50', iconColor: '#2563eb' },
+                  { id: 'atm_bersama_va', name: 'ATM Bersama', color: 'bg-blue-50', iconColor: '#3b82f6' }
+                ].map((bank) => (
+                  <TouchableOpacity key={bank.id} onPress={() => processPayment(bank.id)} style={tw`w-full flex-row items-center p-5 border border-whisper rounded-[20px] mb-3`}>
+                    <View style={tw`w-10 h-10 rounded-full ${bank.color} items-center justify-center mr-4`}>
+                      <CreditCard color={bank.iconColor} size={20} />
+                    </View>
+                    <Text style={tw`font-bold text-ink text-sm`}>{bank.name}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
 
