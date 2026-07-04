@@ -160,7 +160,7 @@ export default function Riwayat() {
     return new Date(0);
   };
 
-  const historyData = [...dataPembayaran, ...dataPesanan].sort((a, b) => {
+  const historyData = [...dataTabungan, ...dataPembayaran, ...dataPesanan].sort((a, b) => {
     const dateA = a.tanggal || a.Waktu;
     const dateB = b.tanggal || b.Waktu;
     return safeDate(dateB).getTime() - safeDate(dateA).getTime();
