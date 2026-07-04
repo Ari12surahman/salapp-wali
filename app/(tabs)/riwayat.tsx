@@ -160,11 +160,13 @@ export default function Riwayat() {
     return new Date(0);
   };
 
-  const historyData = [...dataTabungan, ...dataPembayaran, ...dataPesanan].sort((a, b) => {
-    const dateA = a.tanggal || a.Waktu;
-    const dateB = b.tanggal || b.Waktu;
-    return safeDate(dateB).getTime() - safeDate(dateA).getTime();
-  });
+  const historyData = [...dataTabungan, ...dataPembayaran, ...dataPesanan]
+    .filter((item) => item.status !== 'Pending')
+    .sort((a, b) => {
+      const dateA = a.tanggal || a.Waktu;
+      const dateB = b.tanggal || b.Waktu;
+      return safeDate(dateB).getTime() - safeDate(dateA).getTime();
+    });
 
   return (
     <View style={tw`flex-1 bg-canvas`}>
