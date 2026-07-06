@@ -10,6 +10,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 import { supabase } from '../utils/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const fetchPakasirDirect = async (action: string, payload: any) => {
   // Kita proxy ke Next.js API route yang ada di POS karena POS sudah mendukung CORS
@@ -75,7 +76,8 @@ export default function PakasirModal() {
     method: string | null;
     code: string | null;
     txId: string | null;
-  }>({ step: null, method: null, code: null, txId: null });
+    isSandbox?: boolean;
+  }>({ step: null, method: null, code: null, txId: null, isSandbox: false });
 
   useEffect(() => {
     if (isOpen) {
@@ -86,9 +88,20 @@ export default function PakasirModal() {
   }, [isOpen]);
 
   const loadUser = async () => {
-    const session = await SecureStore.getItemAsync("_parent_session");
-    if (session) {
-      const parsedUser = JSON.parse(session);
+    let parsedUser = null;
+    try {
+      const session = await SecureStore.getItemAsync("_parent_session");
+      if (session) {
+        parsedUser = JSON.parse(session);
+      } else {
+        const raw = await AsyncStorage.getItem("userData");
+        if (raw) parsedUser = JSON.parse(raw);
+      }
+    } catch (e) {
+      console.log("Error reading session in PakasirModal:", e);
+    }
+
+    if (parsedUser) {
       setUser(parsedUser);
 
       // Selalu fetch parent data untuk mendapatkan masterBills (slug & apiKey Pakasir)
@@ -108,10 +121,10 @@ export default function PakasirModal() {
       }
 
       if (type === "BAYAR_TAGIHAN") {
-        const sisa = data?.nominal - (data?.terbayar || 0);
+        const sisa = (data?.nominal || 0) - (data?.terbayar || 0);
         setBayarAmount(sisa);
         setTopUpAmount(sisa.toString());
-        setQrisState({ step: null, method: null, code: null, txId: null });
+        setQrisState({ step: null, method: null, code: null, txId: null, isSandbox: false });
       } else if (type === "TOPUP_TABUNGAN") {
         setTopUpAmount("");
         setQrisState({ step: null, method: null, code: null, txId: null });
