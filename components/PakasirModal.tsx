@@ -826,12 +826,27 @@ export default function PakasirModal() {
                         onPress={async () => {
                           try {
                             if (Platform.OS === 'web') {
-                              const a = document.createElement('a');
-                              a.href = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrisState.code!)}`;
-                              a.download = `QRIS-${bayarAmount}.png`;
-                              document.body.appendChild(a);
-                              a.click();
-                              document.body.removeChild(a);
+                              try {
+                                const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrisState.code!)}`);
+                                const blob = await res.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.style.display = 'none';
+                                a.href = url;
+                                a.download = `QRIS-${bayarAmount}.png`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+                              } catch(e) {
+                                const a = document.createElement('a');
+                                a.href = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrisState.code!)}`;
+                                a.target = "_blank";
+                                a.download = `QRIS-${bayarAmount}.png`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }
                             } else {
                               const fileUri = FileSystem.documentDirectory + 'qris.png';
                               const { uri } = await FileSystem.downloadAsync(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrisState.code!)}`, fileUri);
