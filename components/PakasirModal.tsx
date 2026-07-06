@@ -79,6 +79,20 @@ export default function PakasirModal() {
     isSandbox?: boolean;
   }>({ step: null, method: null, code: null, txId: null, isSandbox: false });
 
+  const [timeLeft, setTimeLeft] = useState(900);
+
+  useEffect(() => {
+    let timer: any;
+    if ((qrisState.step === "SHOW_QR" || qrisState.step === "SHOW_VA") && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (timeLeft <= 0 && (qrisState.step === "SHOW_QR" || qrisState.step === "SHOW_VA")) {
+      clearInterval(timer);
+    }
+    return () => clearInterval(timer);
+  }, [qrisState.step, timeLeft]);
+
   useEffect(() => {
     if (isOpen) {
       loadUser();
@@ -250,6 +264,7 @@ export default function PakasirModal() {
         const isSandboxServer = res.payment.payment_number.toUpperCase().includes('SANDBOX') || res.payment.payment_number === '123123123';
 
         if (method === "qris") {
+          setTimeLeft(900);
           setQrisState({
             step: "SHOW_QR",
             method,
@@ -258,6 +273,7 @@ export default function PakasirModal() {
             isSandbox: isSandboxServer
           });
         } else {
+          setTimeLeft(900);
           setQrisState({
             step: "SHOW_VA",
             method,
@@ -782,57 +798,80 @@ export default function PakasirModal() {
                 <Text style={tw`text-xl font-bold text-ink mb-2`}>
                   {qrisState.method === "qris" ? "Scan QRIS" : "Transfer VA"}
                 </Text>
-                <Text style={tw`text-sm text-steel mb-6`}>Selesaikan pembayaran sebelum batas waktu habis.</Text>
-
-                {qrisState.step === "SHOW_QR" ? (
-                  <View style={tw`items-center w-full`}>
-                    <View style={tw`bg-canvas border border-whisper rounded-[24px] p-4 w-64 h-64 mb-4`}>
-                      <Image 
-                        source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrisState.code!)}` }} 
-                        style={tw`w-full h-full`}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <TouchableOpacity 
-                      onPress={async () => {
-                        try {
-                          const fileUri = FileSystem.documentDirectory + 'qris.png';
-                          const { uri } = await FileSystem.downloadAsync(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrisState.code!)}`, fileUri);
-                          if (await Sharing.isAvailableAsync()) {
-                            await Sharing.shareAsync(uri, { 
-                              dialogTitle: 'Simpan atau Bagikan QRIS',
-                              mimeType: 'image/png',
-                              UTI: 'public.png'
-                            });
-                          } else {
-                            Alert.alert('Info', 'Sharing tidak tersedia di perangkat ini');
-                          }
-                        } catch (e: any) {
-                          Alert.alert('Error', e?.message || String(e) || 'Gagal mengunduh QRIS');
-                        }
-                      }}
-                      style={tw`bg-slate-200 px-6 py-3 rounded-full mb-6 flex-row items-center justify-center`}
-                    >
-                      <Download color={tw.color('ink')} size={16} />
-                      <Text style={tw`text-ink font-bold text-xs ml-2`}>Download QRIS</Text>
-                    </TouchableOpacity>
-                  </View>
+                
+                {timeLeft > 0 ? (
+                  <>
+                    <Text style={tw`text-sm text-steel mb-2`}>
+                      Selesaikan pembayaran sebelum batas waktu habis: <Text style={tw`font-bold text-red-500`}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</Text>
+                    </Text>
+                    <Text style={tw`text-xs font-bold text-red-500 text-center mb-6 px-4`}>
+                      ⚠️ Mohon JANGAN tutup halaman ini atau keluar dari aplikasi sebelum pembayaran selesai.
+                    </Text>
+                  </>
                 ) : (
-                  <View style={tw`bg-canvas border border-whisper rounded-[24px] p-6 mb-6 items-center w-full`}>
-                    <Text style={tw`text-xs font-bold text-steel uppercase mb-2`}>Bank {qrisState.method?.split("_")[0]}</Text>
-                    <Text style={tw`text-3xl font-bold text-ink tracking-widest mb-4`}>{qrisState.code}</Text>
-                    <TouchableOpacity 
-                      onPress={async () => {
-                        await Clipboard.setStringAsync(qrisState.code!);
-                        Alert.alert("Sukses", "Nomor VA disalin ke clipboard!");
-                      }}
-                      style={tw`bg-slate-200 px-6 py-3 rounded-full flex-row items-center justify-center`}
-                    >
-                      <Copy color={tw.color('ink')} size={16} />
-                      <Text style={tw`text-ink font-bold text-xs ml-2`}>Copy VA</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <Text style={tw`text-base font-bold text-red-500 mb-6`}>Waktu Pembayaran Habis!</Text>
                 )}
+
+                {timeLeft > 0 ? (
+                  qrisState.step === "SHOW_QR" ? (
+                    <View style={tw`items-center w-full`}>
+                      <View style={tw`bg-canvas border border-whisper rounded-[24px] p-4 w-64 h-64 mb-4`}>
+                        <Image 
+                          source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrisState.code!)}` }} 
+                          style={tw`w-full h-full`}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <TouchableOpacity 
+                        onPress={async () => {
+                          try {
+                            if (Platform.OS === 'web') {
+                              const a = document.createElement('a');
+                              a.href = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrisState.code!)}`;
+                              a.download = `QRIS-${bayarAmount}.png`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                            } else {
+                              const fileUri = FileSystem.documentDirectory + 'qris.png';
+                              const { uri } = await FileSystem.downloadAsync(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrisState.code!)}`, fileUri);
+                              if (await Sharing.isAvailableAsync()) {
+                                await Sharing.shareAsync(uri, { 
+                                  dialogTitle: 'Simpan atau Bagikan QRIS',
+                                  mimeType: 'image/png',
+                                  UTI: 'public.png'
+                                });
+                              } else {
+                                Alert.alert('Info', 'Sharing tidak tersedia di perangkat ini');
+                              }
+                            }
+                          } catch (e: any) {
+                            Alert.alert('Error', e?.message || String(e) || 'Gagal mengunduh QRIS');
+                          }
+                        }}
+                        style={tw`bg-slate-200 px-6 py-3 rounded-full mb-6 flex-row items-center justify-center`}
+                      >
+                        <Download color={tw.color('ink')} size={16} />
+                        <Text style={tw`text-ink font-bold text-xs ml-2`}>Download QRIS</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={tw`bg-canvas border border-whisper rounded-[24px] p-6 mb-6 items-center w-full`}>
+                      <Text style={tw`text-xs font-bold text-steel uppercase mb-2`}>Bank {qrisState.method?.split("_")[0]}</Text>
+                      <Text style={tw`text-3xl font-bold text-ink tracking-widest mb-4`}>{qrisState.code}</Text>
+                      <TouchableOpacity 
+                        onPress={async () => {
+                          await Clipboard.setStringAsync(qrisState.code!);
+                          Alert.alert("Sukses", "Nomor VA disalin ke clipboard!");
+                        }}
+                        style={tw`bg-slate-200 px-6 py-3 rounded-full flex-row items-center justify-center`}
+                      >
+                        <Copy color={tw.color('ink')} size={16} />
+                        <Text style={tw`text-ink font-bold text-xs ml-2`}>Copy VA</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )
+                ) : null}
 
                 <View style={tw`p-4 bg-accent/5 rounded-2xl mb-6 flex-row justify-between items-center w-full border border-accent/10`}>
                   <View>

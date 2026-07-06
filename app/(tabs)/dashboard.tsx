@@ -167,9 +167,28 @@ export default function Dashboard() {
       )
       .subscribe();
 
+    // 3. Listen for Real-time changes in Tagihan
+    const tagihanChannel = supabase
+      .channel('realtime-wali-tagihan')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'Tagihan',
+          filter: `nis=eq.${userData.nis}`
+        },
+        (payload) => {
+          console.log('[Supabase Real-time] Perubahan Tagihan Terdeteksi!', payload);
+          loadData(true);
+        }
+      )
+      .subscribe();
+
     return () => {
       subscription.remove();
       supabase.removeChannel(channel);
+      supabase.removeChannel(tagihanChannel);
     };
   }, [userData?.nis, loadData]);
 

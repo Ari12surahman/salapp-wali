@@ -96,8 +96,34 @@ export default function Tagihan() {
       loadData(true);
     });
 
+    let tagihanChannel: any = null;
+    const setupRealtime = async () => {
+      const session = await SecureStore.getItemAsync('_parent_session');
+      if (session) {
+        const user = JSON.parse(session);
+        tagihanChannel = supabase
+          .channel('realtime-wali-tagihan-menu')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'Tagihan',
+              filter: `nis=eq.${user.nis}`
+            },
+            (payload) => {
+              console.log('[Supabase Real-time] Perubahan Tagihan (Menu) Terdeteksi!', payload);
+              loadData(true);
+            }
+          )
+          .subscribe();
+      }
+    };
+    setupRealtime();
+
     return () => {
       subscription.remove();
+      if (tagihanChannel) supabase.removeChannel(tagihanChannel);
     };
   }, []);
 
