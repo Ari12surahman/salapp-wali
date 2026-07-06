@@ -20,9 +20,37 @@ export default function AutoUpdater() {
           } else {
             if (initialVersion.current !== data.version) {
               console.log(`[AutoUpdater] New version detected (${data.version}), reloading...`);
+              
+              // 1. Tell ServiceWorker to skipWaiting
+              if ('serviceWorker' in navigator) {
+                try {
+                  const regs = await navigator.serviceWorker.getRegistrations();
+                  for (let reg of regs) {
+                    if (reg.waiting) {
+                      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                    reg.update();
+                  }
+                } catch (err) {
+                  console.warn("[AutoUpdater] SW update failed", err);
+                }
+              }
+
+              // 2. Clear browser caches for the PWA
+              if ('caches' in window) {
+                try {
+                  const cacheNames = await caches.keys();
+                  await Promise.all(cacheNames.map(name => caches.delete(name)));
+                  console.log("[AutoUpdater] Caches cleared.");
+                } catch (err) {
+                  console.warn("[AutoUpdater] Cache clear failed", err);
+                }
+              }
+
+              // 3. Reload app
               setTimeout(() => {
                 window.location.reload();
-              }, 500);
+              }, 1000);
             }
           }
         } catch (e) {

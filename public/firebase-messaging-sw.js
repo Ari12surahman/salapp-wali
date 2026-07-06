@@ -20,7 +20,7 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.data?.title || 'SalApp Wali';
   const notificationOptions = {
     body: payload.data?.body || 'Pemberitahuan baru',
-    icon: payload.data?.icon || 'https://salapp-wali.vercel.app/icon.png',
+    icon: payload.data?.icon || 'https://salapp-wali.vercel.app/notif.png',
     badge: 'https://salapp-wali.vercel.app/notif.png',
     data: payload.data,
   };

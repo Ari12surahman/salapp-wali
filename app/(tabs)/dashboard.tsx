@@ -143,14 +143,33 @@ export default function Dashboard() {
   useEffect(() => {
     if (!userData?.nis) return;
 
-    // Listen for instant refresh from PakasirModal (instead of wasteful Supabase Realtime)
+    // 1. Listen for instant refresh from PakasirModal (Local event)
     const subscription = DeviceEventEmitter.addListener('refresh_dashboard', () => {
       console.log('Instant refresh received');
       loadData(true); // background refresh
     });
 
+    // 2. Listen for Real-time changes in Transaksi (Efektif & Hemat Egress karena ada filter SantriID)
+    const channel = supabase
+      .channel('realtime-wali-transaksi')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'Transaksi',
+          filter: `SantriID=eq.${userData.nis}`
+        },
+        (payload) => {
+          console.log('[Supabase Real-time] Perubahan Transaksi Terdeteksi!', payload);
+          loadData(true); // background refresh agar status pesanan langsung berubah
+        }
+      )
+      .subscribe();
+
     return () => {
       subscription.remove();
+      supabase.removeChannel(channel);
     };
   }, [userData?.nis, loadData]);
 

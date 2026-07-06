@@ -191,7 +191,9 @@ export default function PakasirModal() {
         method: method,
         amount: bayarAmount,
         tagihanData: data,
-        isBulk: false
+        isBulk: false,
+        slug: slug,
+        apiKey: apiKey
       };
       
       let webhookTipe = 'TAGIHAN_PORTAL';
@@ -205,6 +207,8 @@ export default function PakasirModal() {
           total: bayarAmount,
           warungId: data?.warungId || 'WRG-KANTIN',
           statusAmbil: 'Selesai',
+          slug: slug,
+          apiKey: apiKey,
           items: data?.items?.map((item: any) => ({
             id: item.id || `ITM-${Date.now()}`,
             nama: item.nama,
