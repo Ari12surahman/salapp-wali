@@ -419,23 +419,31 @@ export default function PakasirModal() {
 
                 <TouchableOpacity
                   onPress={() => {
-                    const amt = parseInt(topUpAmount || "0", 10);
+                    const rawAmt = topUpAmount ? topUpAmount.replace(/\D/g, "") : "0";
+                    const amt = parseInt(rawAmt, 10);
+                    
                     if (type === "BAYAR_TAGIHAN") {
-                       const sisa = data?.nominal - (data?.terbayar || 0);
+                       // Parse safe nominals
+                       const rawNom = String(data?.nominal || "0").replace(/\D/g, "");
+                       const rawTer = String(data?.terbayar || "0").replace(/\D/g, "");
+                       const sisa = parseInt(rawNom, 10) - parseInt(rawTer, 10);
+                       
+                       if (amt <= 0) {
+                          Alert.alert("Perhatian", "Nominal bayar tidak boleh kosong atau 0.");
+                          return;
+                       }
                        if (amt > sisa) {
-                          Alert.alert("Error", "Nominal bayar tidak boleh melebihi sisa tagihan!");
+                          Alert.alert("Perhatian", "Nominal bayar tidak boleh melebihi sisa tagihan!");
                           return;
                        }
-                       if (amt < 10000) {
-                          Alert.alert("Error", "Minimal pembayaran Rp 10.000");
-                          return;
-                       }
+                       // Hapus limit 10.000 untuk tagihan karena bisa jadi tagihan memang kecil
                     } else {
                        if (amt < 10000) {
-                          Alert.alert("Error", "Minimal top-up Rp 10.000");
+                          Alert.alert("Perhatian", "Minimal top-up Rp 10.000");
                           return;
                        }
                     }
+                    
                     setBayarAmount(amt);
                     setQrisState({ ...qrisState, step: "CHOOSE_METHOD" });
                   }}
@@ -650,11 +658,16 @@ export default function PakasirModal() {
                 
                 <TouchableOpacity
                   onPress={() => {
-                    const total = selectedBulkItems.reduce((acc, curr) => acc + curr.nominal, 0);
-                    if (total < 10000) {
-                       Alert.alert("Error", "Total pembayaran minimal Rp 10.000");
+                    const total = selectedBulkItems.reduce((acc, curr) => {
+                      const nom = parseInt(String(curr.nominal || "0").replace(/\D/g, ""), 10);
+                      return acc + (isNaN(nom) ? 0 : nom);
+                    }, 0);
+                    
+                    if (total <= 0) {
+                       Alert.alert("Perhatian", "Belum ada item tagihan yang dipilih atau total Rp 0.");
                        return;
                     }
+                    
                     setBayarAmount(total);
                     setQrisState({ ...qrisState, step: "CHOOSE_METHOD" });
                   }}
