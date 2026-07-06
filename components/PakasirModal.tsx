@@ -141,37 +141,38 @@ export default function PakasirModal() {
     try {
       const orderId = `PKS-${Date.now()}`;
       
-      // Ambil slug dan apiKey dari MasterTagihan jika tersedia
+      // Ambil slug dan apiKey dari MasterTagihan atau Pengaturan jika tersedia
       let slug = "sunbox";
       let apiKey = "xxx123";
       
-      if (bulkData?.masterBills && bulkData.masterBills.length > 0) {
+      // Mencegah eksekusi jika data parent belum selesai di-load
+      if (!bulkData) {
+        Alert.alert("Mohon Tunggu", "Data sedang dimuat, silakan coba beberapa detik lagi.");
+        setQrisState({ step: "CHOOSE_METHOD", method: null, code: null, txId: null });
+        return;
+      }
+
+      if (type === "TITIP_JAJAN") {
+         // Khusus TITIP_JAJAN (Warung), gunakan kredensial POS dari tabel Pengaturan
+         if (bulkData.pengaturan) {
+           const dom = bulkData.pengaturan.find((p: any) => p.Kunci === "PAKASIR_DOMAIN" || p.Kunci === "pakasir_domain")?.Nilai;
+           const apiK = bulkData.pengaturan.find((p: any) => p.Kunci === "PAKASIR_APIKEY" || p.Kunci === "pakasir_apikey")?.Nilai;
+           if (dom) slug = dom;
+           if (apiK) apiKey = apiK;
+         }
+      } else if (bulkData?.masterBills && bulkData.masterBills.length > 0) {
         let masterTagihanObj = null;
         if (type === "BAYAR_TAGIHAN" && data?.tagihan) {
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === data.tagihan.toLowerCase());
         } else if (type === "BAYAR_BEBAS" && selectedBulkItems.length > 1) {
-           // Jika bayar lebih dari 1 tagihan sekaligus, arahkan ke project 'Gabungan'
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === "gabungan");
         } else if (type === "BAYAR_BEBAS" && selectedBulkItems.length === 1) {
-           // Jika hanya bayar 1 tagihan, arahkan ke project spesifik tagihan tersebut
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan.toLowerCase() === selectedBulkItems[0].tagihan.toLowerCase());
         } else if (type === "TOPUP_TABUNGAN") {
            masterTagihanObj = bulkData.masterBills.find((m: any) => m.tagihan?.toLowerCase().includes("tabungan"));
-        } else if (type === "TITIP_JAJAN") {
-           // Khusus TITIP_JAJAN (Warung), gunakan kredensial POS dari tabel Pengaturan
-           if (bulkData.pengaturan) {
-             const dom = bulkData.pengaturan.find((p: any) => p.Kunci === "PAKASIR_DOMAIN" || p.Kunci === "pakasir_domain")?.Nilai;
-             const apiK = bulkData.pengaturan.find((p: any) => p.Kunci === "PAKASIR_APIKEY" || p.Kunci === "pakasir_apikey")?.Nilai;
-             if (dom) slug = dom;
-             if (apiK) apiKey = apiK;
-             
-             // Bypass masterTagihanObj search since we already have credentials
-             masterTagihanObj = { pakasirSlug: slug, pakasirApiKey: apiKey };
-           }
         }
         
-
-        if (masterTagihanObj && type !== "TITIP_JAJAN") {
+        if (masterTagihanObj) {
            if (masterTagihanObj.pakasirSlug) slug = masterTagihanObj.pakasirSlug;
            if (masterTagihanObj.pakasirApiKey) apiKey = masterTagihanObj.pakasirApiKey;
         }
