@@ -127,10 +127,19 @@ function setupForegroundFCM() {
           if (typeof window !== 'undefined' && 'Notification' in window) {
             if (Notification.permission === 'granted') {
               navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(title, { body, icon: '/icon.png' });
+                const iconPath = window.location.origin + '/icon.png';
+                const badgePath = window.location.origin + '/notif.png';
+                registration.showNotification(title, { 
+                  body, 
+                  icon: iconPath,
+                  badge: badgePath,
+                  requireInteraction: false,
+                  vibrate: [200, 100, 200]
+                });
               }).catch(err => {
                 console.log('SW notification failed:', err);
-                new Notification(title, { body, icon: '/icon.png' });
+                const iconPath = window.location.origin + '/icon.png';
+                new Notification(title, { body, icon: iconPath });
               });
             }
           }
