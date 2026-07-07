@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as SecureStore from '../utils/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../tailwind';
 import { ShieldCheck, User, Lock, Eye, EyeOff, AlertCircle, ChevronRight } from 'lucide-react-native';
 import { loginOrangTua, savePushToken } from '../utils/supabaseApi';
@@ -52,8 +53,12 @@ export default function Login() {
           appName: "Portal Wali Santri"
         }));
         
+        if (!fcmToken) {
+          fcmToken = await AsyncStorage.getItem('_push_token');
+        }
+        
         if (fcmToken) {
-          console.log('Menyimpan FCM Token baru...');
+          console.log('Menyimpan FCM/Expo Token baru...', fcmToken);
           await savePushToken(res.user.nis, fcmToken);
         }
         
