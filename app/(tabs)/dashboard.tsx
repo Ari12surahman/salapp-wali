@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput, DeviceEventEmitter } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput, DeviceEventEmitter, Platform } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
