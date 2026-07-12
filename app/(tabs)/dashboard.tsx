@@ -5,7 +5,7 @@ import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   Receipt, Wallet, TrendingUp, AlertCircle, ArrowRight, ArrowDownRight, 
-  ShieldCheck, ShoppingBag, BookOpen, Users, Heart, X, Store, CheckCircle2, Clock, LogOut 
+  ShieldCheck, ShoppingBag, BookOpen, Users, Heart, X, Store, CheckCircle2, Clock, LogOut, Search 
 } from 'lucide-react-native';
 import tw from '../../tailwind';
 import { getParentData, savePushToken } from '../../utils/supabaseApi';
@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [activeWarungId, setActiveWarungId] = useState<string>('');
   const [isTitipJajanOpen, setIsTitipJajanOpen] = useState(false);
   const [catatanJajan, setCatatanJajan] = useState('');
+  const [searchJajan, setSearchJajan] = useState('');
 
   const loadData = useCallback(async (isBackground = false) => {
     try {
@@ -515,9 +516,32 @@ export default function Dashboard() {
                   </View>
                 </ScrollView>
 
-                <Text style={tw`text-sm font-bold text-ink mb-3 border-t border-whisper pt-5`}>Daftar Produk</Text>
+                <View style={tw`flex-row items-center justify-between border-t border-whisper pt-5 mb-3`}>
+                  <Text style={tw`text-sm font-bold text-ink`}>Daftar Produk</Text>
+                </View>
+                
+                <View style={tw`bg-canvas border border-slate-200 rounded-xl px-4 py-2.5 flex-row items-center mb-4`}>
+                  <Search color={tw.color('steel')} size={18} />
+                  <TextInput 
+                    style={tw`flex-1 ml-2 text-sm text-ink font-medium h-8`}
+                    placeholder="Cari jajan atau makanan..."
+                    placeholderTextColor={tw.color('slate-400')}
+                    value={searchJajan}
+                    onChangeText={setSearchJajan}
+                  />
+                  {searchJajan.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchJajan('')}>
+                      <X color={tw.color('slate-400')} size={16} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
                 <View style={tw`flex-row flex-wrap justify-between`}>
-                  {dataPOSProduk.filter(p => (p.warungid || p.WarungID) === activeWarungId).map((p: any, idx: number) => {
+                  {dataPOSProduk.filter(p => {
+                    const warungMatch = (p.warungid || p.WarungID) === activeWarungId;
+                    const nameMatch = (p.nama || p.Nama || '').toLowerCase().includes(searchJajan.toLowerCase());
+                    return warungMatch && nameMatch;
+                  }).map((p: any, idx: number) => {
                     const pId = p.id || p.ID;
                     const pNama = p.nama || p.Nama;
                     const pHarga = Number(p.hargajual || p.HargaJual) || 0;
@@ -561,9 +585,9 @@ export default function Dashboard() {
                     );
                   })}
                 </View>
-                {dataPOSProduk.filter(p => (p.warungid || p.WarungID) === activeWarungId).length === 0 && (
+                {dataPOSProduk.filter(p => (p.warungid || p.WarungID) === activeWarungId && (p.nama || p.Nama || '').toLowerCase().includes(searchJajan.toLowerCase())).length === 0 && (
                   <View style={tw`items-center py-10 bg-white rounded-2xl border border-whisper border-dashed`}>
-                    <Text style={tw`text-xs font-medium text-steel`}>Belum ada produk di warung ini.</Text>
+                    <Text style={tw`text-xs font-medium text-steel`}>{searchJajan ? 'Pencarian tidak ditemukan.' : 'Belum ada produk di warung ini.'}</Text>
                   </View>
                 )}
               </>
