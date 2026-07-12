@@ -38,12 +38,30 @@ export const callGasAPI = async (action: string, data: any = {}) => {
         const { data: tabungan } = await supabase.from('Tabungan').select('id, tanggal, jenis, nominal, keterangan').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
         // Fetch Transaksi for history (all payments)
         const { data: pembayaran } = await supabase.from('Pembayaran').select('*').eq('nis', nis).order('tanggal', { ascending: false }).limit(15);
-        const { data: transaksi } = await supabase.from('Transaksi')
+        const { data: transaksiData } = await supabase.from('Transaksi')
           .select('TrxID, Waktu, TotalHarga, StatusAmbil, Metode')
           .eq('SantriID', nis)
           .order('Waktu', { ascending: false })
           .limit(15);
-        
+          
+        let formattedTransaksi = transaksiData || [];
+        if (formattedTransaksi.length > 0) {
+          const trxIds = formattedTransaksi.map((p: any) => p.TrxID);
+          const { data: details } = await supabase
+            .from('DetailTransaksi')
+            .select('TrxID, NamaProduk, Kuantitas, HargaSatuan, Subtotal')
+            .in('TrxID', trxIds);
+            
+          formattedTransaksi = formattedTransaksi.map((p: any) => ({
+            ...p,
+            items: (details || [])
+              .filter((d: any) => d.TrxID === p.TrxID)
+              .map((d: any) => ({ 
+                nama: `${d.NamaProduk} (x${d.Kuantitas})`, 
+                qty: d.Kuantitas, 
+                harga: d.HargaSatuan || (d.Kuantitas ? (d.Subtotal / d.Kuantitas) : 0),
+                nominal: d.Subtotal || (d.HargaSatuan * d.Kuantitas) || 0
+              }))
         const { data: masterTagihan } = await supabase.from('MasterTagihan').select('tagihan, portalMenu, pakasirSlug, pakasirApiKey, nominal');
         
         const { data: pengaturan } = await supabase.from('Pengaturan').select('Kunci, Nilai');
@@ -53,7 +71,7 @@ export const callGasAPI = async (action: string, data: any = {}) => {
           namaSantri: santriData?.nama || 'Santri',
           Tagihan: tagihan || [],
           Tabungan: tabungan || [],
-          Transaksi: transaksi || [],
+          Transaksi: formattedTransaksi,
           Pembayaran: pembayaran || [],
           MasterTagihan: masterTagihan ? masterTagihan.map(m => ({
             ...m,
@@ -101,14 +119,19 @@ export const callGasAPI = async (action: string, data: any = {}) => {
         const trxIds = pesanan.map(p => p.TrxID);
         const { data: details } = await supabase
           .from('DetailTransaksi')
-          .select('TrxID, NamaProduk, Kuantitas')
+          .select('TrxID, NamaProduk, Kuantitas, HargaSatuan, Subtotal')
           .in('TrxID', trxIds);
           
         const formattedPesanan = pesanan.map((p: any) => ({
           ...p,
           items: (details || [])
             .filter((d: any) => d.TrxID === p.TrxID)
-            .map((d: any) => ({ nama: d.NamaProduk, qty: d.Kuantitas }))
+            .map((d: any) => ({ 
+              nama: `${d.NamaProduk} (x${d.Kuantitas})`, 
+              qty: d.Kuantitas,
+              harga: d.HargaSatuan || (d.Kuantitas ? (d.Subtotal / d.Kuantitas) : 0),
+              nominal: d.Subtotal || (d.HargaSatuan * d.Kuantitas) || 0
+            }))
         }));
           
         return { success: true, data: formattedPesanan };
@@ -177,7 +200,7 @@ export const callGasAPI = async (action: string, data: any = {}) => {
           // Bayar massal
           for (const item of items) {
             if (item.tagihanId) {
-              const { data: currentBill } = await supabase.from('Tagihan').select('nominal, terbayar').eq('id', item.tagihanId).single();
+              const { data: currentBill } = await supabase.from('Tagihan').select('nominal, terbayar, tagihan, periode').eq('id', item.tagihanId).single();
               if (currentBill) {
                 const totalTerbayar = (currentBill.terbayar || 0) + item.nominal;
                 const status = totalTerbayar >= currentBill.nominal ? 'Lunas' : 'Cicil';
@@ -228,7 +251,7 @@ export const callGasAPI = async (action: string, data: any = {}) => {
           }
         } else if (tagihanId) {
           // Bayar single tagihan
-          const { data: currentBill } = await supabase.from('Tagihan').select('nominal, terbayar').eq('id', tagihanId).single();
+          const { data: currentBill } = await supabase.from('Tagihan').select('nominal, terbayar, tagihan, periode').eq('id', tagihanId).single();
           if (currentBill) {
             const totalTerbayar = (currentBill.terbayar || 0) + (nominalBayar || 0);
             const status = totalTerbayar >= currentBill.nominal ? 'Lunas' : 'Cicil';

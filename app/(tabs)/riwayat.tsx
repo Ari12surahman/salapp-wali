@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity, DeviceEventEmitter } from 'react-native';
-import { Clock, CheckCircle2, TrendingUp, TrendingDown, RefreshCcw, FileText } from 'lucide-react-native';
+import { Clock, CheckCircle, CheckCircle2, TrendingUp, TrendingDown, RefreshCcw, FileText } from 'lucide-react-native';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
@@ -29,8 +29,10 @@ export default function Riwayat() {
       const combineHistory = (pems: any[], tags: any[]) => {
         const combined = [...pems];
         const lunasTags = tags ? tags.filter((t: any) => t.status === 'Lunas' || t.status === 'Cicil') : [];
+        const cleanTag = (str: string) => (str || '').replace(/ \(Via QRIS\)/i, '').trim();
+        
         lunasTags.forEach((tag: any) => {
-          const hasPem = pems.some(p => p.tagihan === tag.tagihan && p.periode === tag.periode);
+          const hasPem = pems.some(p => cleanTag(p.tagihan) === cleanTag(tag.tagihan) && p.periode === tag.periode);
           if (!hasPem) combined.push(tag);
         });
         return combined;
@@ -130,7 +132,7 @@ export default function Riwayat() {
     );
   }
 
-  const safeDate = (dStr) => {
+  const safeDate = (dStr: any) => {
     if (!dStr) return new Date(0);
     const d = new Date(dStr);
     if (!isNaN(d.getTime())) return d;
@@ -141,12 +143,39 @@ export default function Riwayat() {
     return new Date(0);
   };
 
-  const historyData = [...dataTabungan, ...dataPembayaran, ...dataPesanan]
-    .filter((item) => item.status !== 'Pending')
+  const getSortTime = (item: any) => {
+    if (item.Waktu) {
+      const d = new Date(item.Waktu);
+      if (!isNaN(d.getTime())) return d.getTime();
+    }
+    
+    if (item.id && typeof item.id === 'string' && item.id.includes('INV-PKS-')) {
+      const parts = item.id.split('-');
+      if (parts.length >= 3) {
+        const ts = parseInt(parts[2], 10);
+        if (!isNaN(ts) && ts > 1000000000000) return ts;
+      }
+    }
+    
+    if (item.tanggal) {
+       const d = new Date(item.tanggal);
+       if (!isNaN(d.getTime())) return d.getTime();
+       if (typeof item.tanggal === 'string' && item.tanggal.includes('-')) {
+         const p = item.tanggal.split('-');
+         if (p.length === 3) return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])).getTime();
+       }
+    }
+    
+    return 0;
+  };
+
+  const historyData = [
+    ...dataTabungan.filter(t => !t.keterangan?.includes('Kantin')), 
+    ...dataPembayaran,
+    ...dataPesanan.filter(t => t.Metode === 'Pesanan Online')
+  ].filter((item) => item.status !== 'Pending')
     .sort((a, b) => {
-      const dateA = a.tanggal || a.Waktu;
-      const dateB = b.tanggal || b.Waktu;
-      return safeDate(dateB).getTime() - safeDate(dateA).getTime();
+      return getSortTime(b) - getSortTime(a);
     });
 
   return (
@@ -180,55 +209,58 @@ export default function Riwayat() {
               const isSetor = isTabungan && (item.jenis === "Setor" || item.jenis === "Masuk");
               
               let title = '';
-              if (isPesanan) title = `Pembayaran Titip Jajan`;
+              if (isPesanan) title = 'Pembayaran Titip Jajan';
               else if (isTabungan) title = (item.keterangan || "Mutasi Tabungan");
               else title = (item.tagihan || "Pembayaran");
               
               const isIncome = isSetor;
-              const colorClass = isIncome ? 'success' : (isPesanan ? 'ink' : (isTabungan ? 'danger' : 'accent'));
-              const bgColorClass = isIncome ? 'bg-successBg' : (isPesanan ? 'bg-slate-100' : (isTabungan ? 'bg-dangerBg' : 'bg-accentLight'));
+              const colorClass = isPesanan ? 'ink' : (isIncome ? 'success' : (isTabungan ? 'danger' : 'accent'));
+              const bgColorClass = isPesanan ? 'bg-slate-100' : (isIncome ? 'bg-successBg' : (isTabungan ? 'bg-dangerBg' : 'bg-accentLight'));
               const dateStr = item.tanggal || item.Waktu;
               const nominalNum = isPesanan ? (item.TotalHarga || item.totalHarga || item.total || 0) : item.nominal;
+              const textJenis = isTabungan ? item.jenis : (isPesanan ? item.Metode : 'Pembayaran');
 
               return (
                 <TouchableOpacity 
                   key={idx} 
                   onPress={() => {
-                     if (isPesanan) {
-                       openReceipt({ 
-                         ...item, 
-                         title: 'BUKTI PEMBAYARAN',
-                         id: item.TrxID,
-                         tanggal: item.Waktu,
-                         tagihan: 'Titip Jajan',
-                         nominal: nominalNum
-                       });
-                     } else {
-                       openReceipt({ ...item, title: isTabungan ? 'MUTASI TABUNGAN' : 'BUKTI PEMBAYARAN' });
-                     }
+                       if (isPesanan) {
+                         openReceipt({ 
+                           ...item, 
+                           title: 'BUKTI PEMBAYARAN',
+                           id: item.TrxID,
+                           tanggal: item.Waktu,
+                           tagihan: 'Titip Jajan',
+                           nominal: nominalNum
+                         });
+                       } else {
+                         openReceipt({ ...item, title: isTabungan ? 'MUTASI TABUNGAN' : 'BUKTI PEMBAYARAN' });
+                       }
                   }}
                   style={tw`bg-white border border-whisper p-4 rounded-2xl flex-row items-center justify-between mb-3 shadow-sm active:bg-slate-50`}
                 >
                   <View style={tw`flex-row items-center flex-1`}>
                     <View style={tw`w-10 h-10 rounded-full flex items-center justify-center ${bgColorClass}`}>
-                      {isTabungan ? (
+                      {isPesanan ? (
+                        <Clock color={tw.color(colorClass)} size={20} />
+                      ) : isTabungan ? (
                         isIncome ? <TrendingUp color={tw.color('success')} size={20} /> : <TrendingDown color={tw.color('danger')} size={20} />
-                      ) : isPesanan ? (
-                        <CheckCircle2 color={tw.color('steel')} size={20} />
                       ) : (
-                        <FileText color={tw.color('accent')} size={20} />
+                        <CheckCircle color={tw.color('accent')} size={20} />
                       )}
                     </View>
-                    <View style={tw`ml-3 flex-1 pr-2`}>
-                      <Text style={tw`font-bold text-ink text-sm`}>{title}</Text>
-                      <Text style={tw`text-[11px] text-steel font-medium mt-0.5`}>{safeDate(dateStr).toLocaleDateString('id-ID')}</Text>
+                    <View style={tw`ml-3 flex-1`}>
+                      <Text style={tw`font-bold text-ink text-sm`} numberOfLines={1}>{title}</Text>
+                      <Text style={tw`text-[10px] text-steel mt-0.5`}>
+                        {safeDate(dateStr).toLocaleDateString('id-ID')}
+                      </Text>
                     </View>
                   </View>
-                  <View style={tw`items-end ml-2 flex-shrink-0 w-24`}>
-                    <Text style={tw`font-bold text-sm mb-1 text-${colorClass}`} numberOfLines={1} adjustsFontSizeToFit>
-                      {isIncome ? '+' : '-'} Rp {Math.abs(Number(nominalNum) || 0).toLocaleString('id-ID')}
+                  <View style={tw`items-end`}>
+                    <Text style={tw`font-bold text-${colorClass} text-sm`}>
+                      {isIncome ? '+ ' : '- '}Rp {Number(nominalNum || 0).toLocaleString('id-ID')}
                     </Text>
-                    <Text style={tw`text-[10px] text-steel`}>{isTabungan ? item.jenis : (isPesanan ? item.Metode : item.status)}</Text>
+                    <Text style={tw`text-[10px] text-steel mt-0.5 capitalize`}>{textJenis}</Text>
                   </View>
                 </TouchableOpacity>
               );

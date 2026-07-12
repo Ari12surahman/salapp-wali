@@ -12,6 +12,8 @@ export default function MutasiTabungan() {
   const [refreshing, setRefreshing] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [dataTabungan, setDataTabungan] = useState<any[]>([]);
+  const [dataPesanan, setDataPesanan] = useState<any[]>([]);
+  const [dataWarung, setDataWarung] = useState<any[]>([]);
   const { openReceipt } = useReceiptStore();
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -29,12 +31,16 @@ export default function MutasiTabungan() {
       if (cachedData && !isRefresh && dataTabungan.length === 0) {
         const parsed = JSON.parse(cachedData);
         setDataTabungan(parsed.Tabungan || []);
+        setDataPesanan(parsed.Transaksi || []);
+        setDataWarung(parsed.POS_Warung || []);
         setIsFetching(false);
       }
 
       const res = await getParentData(user.nis);
       const newTabungan = res.Tabungan || [];
       setDataTabungan(newTabungan);
+      setDataPesanan(res.Transaksi || []);
+      setDataWarung(res.POS_Warung || []);
       
       setOffsetTabungan(newTabungan.length);
       setHasMoreTabungan(newTabungan.length === 15);
@@ -113,16 +119,28 @@ export default function MutasiTabungan() {
     return new Date(0);
   };
 
-  const historyData = [...dataTabungan].sort((a, b) => {
-    const dateA = a.tanggal;
-    const dateB = b.tanggal;
+  const historyData = [
+    ...dataTabungan.filter(t => !t.keterangan?.includes('Kantin')), 
+    ...dataPesanan.filter(t => t.Metode === 'Tabungan')
+  ].sort((a, b) => {
+    const dateA = a.tanggal || a.Waktu;
+    const dateB = b.tanggal || b.Waktu;
     return safeDate(dateB).getTime() - safeDate(dateA).getTime();
   });
 
   return (
     <View style={tw`flex-1 bg-canvas`}>
       <View style={tw`bg-white px-4 py-4 flex-row items-center border-b border-whisper pt-12 shadow-sm`}>
-        <TouchableOpacity onPress={() => router.back()} style={tw`w-10 h-10 items-center justify-center mr-2`}>
+        <TouchableOpacity 
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/dashboard');
+            }
+          }} 
+          style={tw`w-10 h-10 items-center justify-center mr-2`}
+        >
           <ChevronLeft color={tw.color('ink')} size={24} />
         </TouchableOpacity>
         <View style={tw`w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center mr-3`}>
@@ -147,25 +165,62 @@ export default function MutasiTabungan() {
             </View>
           ) : (
             historyData.map((item, idx) => {
-              const isIncome = (item.jenis === "Setor" || item.jenis === "Masuk");
-              const title = item.keterangan || "Mutasi Tabungan";
+              const isTabungan = !!item.jenis;
+              const isPesanan = !!item.TrxID;
+              const isIncome = isTabungan && (item.jenis === "Setor" || item.jenis === "Masuk");
               
-              const colorClass = isIncome ? 'success' : 'danger';
-              const bgColorClass = isIncome ? 'bg-successBg' : 'bg-dangerBg';
-              const dateStr = item.tanggal;
-              const nominalNum = item.nominal;
+              let title = '';
+              let isExpense = false;
+              if (isPesanan) {
+                if (item.Metode === 'Tabungan') {
+                  const warung = dataWarung.find((w: any) => w.ID === item.WarungID);
+                  title = warung ? `Belanja Kantin (${warung.Nama})` : "Belanja Kantin (POS)";
+                  isExpense = true;
+                } else {
+                  title = `Pembayaran Titip Jajan`;
+                }
+              } else {
+                title = (item.keterangan || "Mutasi Tabungan");
+              }
+              
+              const colorClass = isIncome ? 'success' : (isExpense ? 'danger' : (isPesanan ? 'ink' : 'danger'));
+              const bgColorClass = isIncome ? 'bg-successBg' : (isExpense ? 'bg-dangerBg' : (isPesanan ? 'bg-slate-100' : 'bg-dangerBg'));
+              const dateStr = item.tanggal || item.Waktu;
+              const nominalNum = isPesanan ? (item.TotalHarga || item.totalHarga || item.total || 0) : item.nominal;
+              const textJenis = isTabungan ? item.jenis : (isExpense ? 'Tarik' : item.Metode);
 
               return (
                 <TouchableOpacity 
                   key={idx} 
                   onPress={() => {
-                     openReceipt({ ...item, title: 'MUTASI TABUNGAN' });
+                     if (isPesanan) {
+                       const warung = dataWarung.find((w: any) => w.ID === item.WarungID);
+                       const warungName = warung ? `Kantin ${warung.Nama}` : 'Belanja Kantin (POS)';
+                       openReceipt({ 
+                         ...item, 
+                         title: isExpense ? 'MUTASI TABUNGAN' : 'BUKTI PEMBAYARAN',
+                         id: item.TrxID,
+                         tanggal: item.Waktu,
+                         tagihan: isExpense ? warungName : 'Titip Jajan',
+                         nominal: nominalNum
+                       });
+                     } else {
+                       openReceipt({ ...item, title: 'MUTASI TABUNGAN' });
+                     }
                   }}
                   style={tw`bg-white border border-whisper p-4 rounded-2xl flex-row items-center justify-between mb-3 shadow-sm active:bg-slate-50`}
                 >
                   <View style={tw`flex-row items-center flex-1`}>
                     <View style={tw`w-10 h-10 rounded-full flex items-center justify-center ${bgColorClass}`}>
-                      {isIncome ? <TrendingUp color={tw.color('success')} size={20} /> : <TrendingDown color={tw.color('danger')} size={20} />}
+                      {isIncome ? (
+                        <TrendingUp color={tw.color('success')} size={20} />
+                      ) : (isExpense || isTabungan) ? (
+                        <TrendingDown color={tw.color('danger')} size={20} />
+                      ) : (
+                        <View style={tw`w-5 h-5 rounded-full border-2 border-steel items-center justify-center`}>
+                          <Text style={tw`text-steel font-bold text-[10px]`}>✓</Text>
+                        </View>
+                      )}
                     </View>
                     <View style={tw`ml-3 flex-1 pr-2`}>
                       <Text style={tw`font-bold text-ink text-sm`}>{title}</Text>
@@ -176,7 +231,7 @@ export default function MutasiTabungan() {
                     <Text style={tw`font-bold text-sm mb-1 text-${colorClass}`} numberOfLines={1} adjustsFontSizeToFit>
                       {isIncome ? '+' : '-'} Rp {Math.abs(Number(nominalNum) || 0).toLocaleString('id-ID')}
                     </Text>
-                    <Text style={tw`text-[10px] text-steel`}>{item.jenis}</Text>
+                    <Text style={tw`text-[10px] text-steel`}>{textJenis}</Text>
                   </View>
                 </TouchableOpacity>
               );

@@ -13,7 +13,7 @@ export default function ReceiptModal() {
 
   let parsedItems: any[] = [];
   try {
-    parsedItems = typeof data.items === 'string' ? JSON.parse(data.items) : (data.items || []);
+    parsedItems = typeof data.items === 'string' ? JSON.parse(data.items) : (data.items || data.DetailTransaksi || []);
   } catch(e) {
     parsedItems = [];
   }
@@ -152,12 +152,16 @@ export default function ReceiptModal() {
               </View>
               <View style={tw`h-[1px] bg-whisper my-2 border border-dashed border-whisper`} />
               {parsedItems && parsedItems.length > 0 ? (
-                parsedItems.map((item: any, idx: number) => (
-                  <View key={idx} style={tw`flex-row justify-between mb-3`}>
-                    <Text style={tw`text-xs text-steel flex-1`}>{item.tagihan || item.nama} {item.periode ? `(${item.periode})` : ''}</Text>
-                    <Text style={tw`text-xs font-bold text-ink ml-2`}>Rp {(Number(item.nominal) || Number(item.harga) * Number(item.qty) || 0).toLocaleString("id-ID")}</Text>
-                  </View>
-                ))
+                parsedItems.map((item: any, idx: number) => {
+                  const itemName = item.tagihan || item.nama || item.NamaProduk || item.Produk?.NamaProduk || "Item";
+                  const itemPrice = Number(item.nominal) || Number(item.harga) * Number(item.qty) || Number(item.Subtotal) || 0;
+                  return (
+                    <View key={idx} style={tw`flex-row justify-between mb-3`}>
+                      <Text style={tw`text-xs text-steel flex-1`}>{itemName} {item.periode ? `(${item.periode})` : ''} {item.Kuantitas ? `x${item.Kuantitas}` : ''}</Text>
+                      <Text style={tw`text-xs font-bold text-ink ml-2`}>Rp {itemPrice.toLocaleString("id-ID")}</Text>
+                    </View>
+                  );
+                })
               ) : (
                 <View style={tw`flex-row justify-between mb-3`}>
                   <Text style={tw`text-xs text-steel flex-1`}>{data.tagihan || "Pembayaran"} {data.periode ? `(${data.periode})` : ''}</Text>
@@ -168,12 +172,16 @@ export default function ReceiptModal() {
               {parsedItems && parsedItems.length > 0 && (
                 <View style={tw`mt-2`}>
                   <Text style={tw`text-[10px] font-bold text-steel mb-2`}>Rincian Item:</Text>
-                  {parsedItems.map((i: any, idx: number) => (
-                    <View key={idx} style={tw`flex-row justify-between mb-1 pl-2`}>
-                      <Text style={tw`text-[11px] text-steel flex-1`}>• {i.tagihan || i.nama} {i.periode ? `(${i.periode})` : ''}</Text>
-                      <Text style={tw`text-[11px] font-bold text-ink ml-2`}>Rp {(i.nominal || i.harga).toLocaleString("id-ID")}</Text>
-                    </View>
-                  ))}
+                  {parsedItems.map((i: any, idx: number) => {
+                    const itemName = i.tagihan || i.nama || i.NamaProduk || i.Produk?.NamaProduk || "Item";
+                    const itemPrice = Number(i.nominal) || i.harga || i.HargaSatuan || 0;
+                    return (
+                      <View key={idx} style={tw`flex-row justify-between mb-1 pl-2`}>
+                        <Text style={tw`text-[11px] text-steel flex-1`}>• {itemName} {i.periode ? `(${i.periode})` : ''} {i.Kuantitas ? `(x${i.Kuantitas})` : ''}</Text>
+                        <Text style={tw`text-[11px] font-bold text-ink ml-2`}>Rp {itemPrice.toLocaleString("id-ID")}</Text>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
 

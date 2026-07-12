@@ -134,6 +134,7 @@ function setupForegroundFCM() {
                   icon: iconPath,
                   badge: badgePath,
                   requireInteraction: false,
+                  // @ts-ignore
                   vibrate: [200, 100, 200]
                 });
               }).catch(err => {
@@ -194,7 +195,7 @@ export default function RootLayout() {
     }
 
     return () => {
-      Notifications.removeNotificationSubscription(notificationListener);
+      notificationListener.remove();
       toastListener.remove();
     };
   }, []);

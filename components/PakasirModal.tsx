@@ -301,7 +301,7 @@ export default function PakasirModal() {
         const res = await fetchPakasirDirect("pollPakasirStatus", { slug, apiKey, orderId, amount: bayarAmount });
         if (res && res.transaction && res.transaction.status === "completed") {
           clearInterval(interval);
-          simulateSuccess(); // Panggil fungsi sukses
+          simulateSuccess(orderId); // Panggil fungsi sukses dengan orderId
         }
       } catch (e) {
         console.log("Polling error", e);
@@ -310,8 +310,9 @@ export default function PakasirModal() {
     setPollingInterval(interval);
   };
 
-  const simulateSuccess = () => {
-    setQrisState({ ...qrisState, step: "SUCCESS" });
+  const simulateSuccess = (fallbackTxId?: string) => {
+    const finalTxId = qrisState.txId || fallbackTxId;
+    setQrisState(prev => ({ ...prev, step: "SUCCESS" }));
     setTimeout(async () => {
       try {
         if (type === "BAYAR_TAGIHAN") {
@@ -321,14 +322,14 @@ export default function PakasirModal() {
             tagihanId: data?.id,
             tagName: data?.tagihan,
             nominalBayar: bayarAmount,
-            transactionId: qrisState.txId,
+            transactionId: finalTxId,
           });
         } else if (type === "TOPUP_TABUNGAN") {
           await submitTopUpTabungan({
             nis: user?.nis,
             nama: user?.nama,
             nominalSetor: bayarAmount,
-            transactionId: qrisState.txId,
+            transactionId: finalTxId,
           });
         } else if (type === "BAYAR_BEBAS") {
           await submitPembayaranQRIS({
@@ -336,7 +337,7 @@ export default function PakasirModal() {
             nama: user?.nama,
             tagihanId: "BULK",
             nominalBayar: bayarAmount,
-            transactionId: qrisState.txId,
+            transactionId: finalTxId,
             items: selectedBulkItems
           });
         } else if (type === "TITIP_JAJAN") {
@@ -347,7 +348,7 @@ export default function PakasirModal() {
             warungId: data?.warungId,
             items: data?.items,
             totalHarga: data?.total,
-            transactionId: qrisState.txId,
+            transactionId: finalTxId,
             catatan: data?.catatan
           });
           

@@ -83,13 +83,23 @@ export const getParentData = async (nis: string) => {
       supabase.from('Tagihan').select('*').in('nis', variants).order('tanggal', { ascending: false }),
       supabase.from('Pembayaran').select('*').in('nis', variants).order('tanggal', { ascending: false }),
       supabase.from('Tabungan').select('*').in('nis', variants).order('tanggal', { ascending: false }),
-      supabase.from('Transaksi').select('*').in('SantriID', variants)
-        .eq('Metode', 'Pesanan Online').order('Waktu', { ascending: false }).limit(20),
-      supabase.from('MasterTagihan').select('tagihan, pakasirSlug, pakasirApiKey, portalMenu').order('tagihan'),
+      supabase.from('Transaksi').select('*').in('SantriID', variants).order('Waktu', { ascending: false }).limit(20),
+      supabase.from('MasterTagihan').select('*').order('tagihan'),
       supabase.from('Warung').select('*'),
       supabase.from('Produk').select('*'),
       supabase.from('Pengaturan').select('Kunci, Nilai'),
     ]);
+
+    // Lakukan mapping manual untuk DetailTransaksi karena ketiadaan Foreign Key
+    const transaksiData = transaksiRes.data || [];
+    if (transaksiData.length > 0) {
+      const trxIds = transaksiData.map((t: any) => t.TrxID);
+      const { data: detailData } = await supabase.from('DetailTransaksi').select('*').in('TrxID', trxIds);
+      const details = detailData || [];
+      transaksiData.forEach((t: any) => {
+        t.DetailTransaksi = details.filter((d: any) => d.TrxID === t.TrxID);
+      });
+    }
 
     // Filter produk aktif di sisi klien (menghindari case-sensitivity issue)
     const rawProduk = produkRes.data || [];
@@ -133,7 +143,31 @@ export const getRiwayatTagihan = async (nis: string, offset: number = 0) => {
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 5. RIWAYAT TABUNGAN PAGINATED
+// 5. RIWAYAT PESANAN PAGINATED
+// ─────────────────────────────────────────────────────────────────
+export const getRiwayatPesanan = async (nis: string, offset: number = 0) => {
+  const { data } = await supabase
+    .from('Transaksi')
+    .select('*')
+    .in('SantriID', nisVariants(nis))
+    .order('Waktu', { ascending: false })
+    .range(offset, offset + 14);
+    
+  const transaksiData = data || [];
+  if (transaksiData.length > 0) {
+    const trxIds = transaksiData.map((t: any) => t.TrxID);
+    const { data: detailData } = await supabase.from('DetailTransaksi').select('*').in('TrxID', trxIds);
+    const details = detailData || [];
+    transaksiData.forEach((t: any) => {
+      t.DetailTransaksi = details.filter((d: any) => d.TrxID === t.TrxID);
+    });
+  }
+  
+  return { success: true, data: transaksiData };
+};
+
+// ─────────────────────────────────────────────────────────────────
+// 6. RIWAYAT TABUNGAN PAGINATED
 // ─────────────────────────────────────────────────────────────────
 export const getRiwayatTabungan = async (nis: string, offset: number = 0) => {
   const { data } = await supabase
@@ -172,12 +206,40 @@ export const submitPembayaranQRIS = async (payload: any) => {
       }]);
     };
 
+    const processNewTagihan = async (item: any) => {
+      const tgId = `TG-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      await supabase.from('Tagihan').insert([{
+        id: tgId,
+        nis, nama,
+        tagihan: item.tagihan,
+        periode: item.periode,
+        nominal: item.nominal,
+        terbayar: item.nominal,
+        status: 'Lunas',
+        tanggal: new Date().toISOString().split('T')[0],
+      }]);
+      const invId = `INV-PKS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      await supabase.from('Pembayaran').insert([{
+        id: invId,
+        tanggal: new Date().toISOString().split('T')[0],
+        nis, nama,
+        tagihan: `${item.tagihan} (Via QRIS)`,
+        periode: item.periode,
+        nominal: item.nominal,
+        status: 'Lunas',
+        sisa: 0,
+        items: JSON.stringify([{ tagihan: item.tagihan, periode: item.periode, nominal: item.nominal }])
+      }]);
+    };
+
     if (tagihanId && tagihanId !== 'NEW' && tagihanId !== 'BULK') {
       await processTagihan(tagihanId, nominalBayar);
     } else if (tagihanId === 'BULK' && items) {
       for (const item of items) {
         if (item.tagihanId && item.tagihanId !== 'NEW') {
           await processTagihan(item.tagihanId, item.nominal);
+        } else {
+          await processNewTagihan(item);
         }
       }
     }
