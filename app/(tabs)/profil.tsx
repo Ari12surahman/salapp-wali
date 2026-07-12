@@ -170,7 +170,13 @@ export default function Profil() {
           {savedAccounts.map((acc, idx) => {
             const isActive = acc.nis === userData?.nis;
             return (
-              <View key={idx} style={tw`flex-row items-center justify-between p-4 ${idx < savedAccounts.length - 1 ? 'border-b border-whisper' : ''} ${isActive ? 'bg-slate-50' : ''}`}>
+              <TouchableOpacity 
+                key={idx} 
+                onPress={() => {
+                  if (!isActive) switchAccount(acc);
+                }}
+                style={tw`flex-row items-center justify-between p-4 ${idx < savedAccounts.length - 1 ? 'border-b border-whisper' : ''} ${isActive ? 'bg-slate-50' : ''}`}
+              >
                 <View style={tw`flex-row items-center flex-1 pr-2`}>
                   <View style={tw`w-10 h-10 rounded-full ${isActive ? 'bg-accent/20' : 'bg-slate-100'} flex items-center justify-center mr-3`}>
                     <Users color={isActive ? tw.color('accent') : tw.color('steel')} size={18} />
@@ -181,16 +187,16 @@ export default function Profil() {
                   </View>
                 </View>
                 {!isActive ? (
-                  <TouchableOpacity onPress={() => switchAccount(acc)} style={tw`flex-row items-center bg-white border border-slate-200 px-3 py-1.5 rounded-xl`}>
+                  <View style={tw`flex-row items-center bg-white border border-slate-200 px-3 py-1.5 rounded-xl`}>
                     <Repeat color={tw.color('ink')} size={14} />
                     <Text style={tw`text-xs font-bold text-ink ml-1.5`}>Beralih</Text>
-                  </TouchableOpacity>
+                  </View>
                 ) : (
                   <View style={tw`bg-accent px-3 py-1 rounded-xl`}>
                     <Text style={tw`text-[10px] font-bold text-white`}>Aktif</Text>
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
             );
           })}
           {savedAccounts.length === 0 && (
