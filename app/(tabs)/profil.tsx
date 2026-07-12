@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, DeviceEventEmitter, Image } from 'react-native';
-import { User, Shield, LogOut, ChevronRight, X, Camera } from 'lucide-react-native';
+import { User, Shield, LogOut, ChevronRight, X, Camera, Plus, Users, Repeat } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
@@ -19,6 +19,9 @@ export default function Profil() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const [profilePic, setProfilePic] = useState<string | null>(null);
+  
+  // Multi Account State
+  const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
 
   useEffect(() => {
     SecureStore.getItemAsync('_parent_session').then(session => {
@@ -31,6 +34,10 @@ export default function Profil() {
           });
         }
       }
+    });
+
+    SecureStore.getItemAsync('_parent_saved_accounts').then(savedStr => {
+      if (savedStr) setSavedAccounts(JSON.parse(savedStr));
     });
   }, []);
 
@@ -55,8 +62,38 @@ export default function Profil() {
 
 
   const handleLogout = async () => {
-    await SecureStore.deleteItemAsync('_parent_session');
-    router.replace('/login');
+    try {
+      const savedStr = await SecureStore.getItemAsync('_parent_saved_accounts');
+      let accounts = savedStr ? JSON.parse(savedStr) : [];
+      
+      if (userData?.nis) {
+        accounts = accounts.filter((acc: any) => acc.nis !== userData.nis);
+      }
+
+      if (accounts.length > 0) {
+        await SecureStore.setItemAsync('_parent_saved_accounts', JSON.stringify(accounts));
+        await SecureStore.setItemAsync('_parent_session', JSON.stringify(accounts[0]));
+        DeviceEventEmitter.emit('pwa_toast', { title: 'Logout', body: `Beralih otomatis ke akun ${accounts[0].nama}` });
+        router.replace('/(tabs)/dashboard');
+      } else {
+        await SecureStore.deleteItemAsync('_parent_saved_accounts');
+        await SecureStore.deleteItemAsync('_parent_session');
+        router.replace('/login');
+      }
+    } catch (e) {
+      await SecureStore.deleteItemAsync('_parent_session');
+      router.replace('/login');
+    }
+  };
+
+  const switchAccount = async (account: any) => {
+    try {
+      await SecureStore.setItemAsync('_parent_session', JSON.stringify(account));
+      DeviceEventEmitter.emit('pwa_toast', { title: 'Beralih Akun', body: `Beralih ke akun ${account.nama}` });
+      router.replace('/(tabs)/dashboard');
+    } catch (e) {
+      DeviceEventEmitter.emit('pwa_toast', { title: 'Error', body: 'Gagal beralih akun' });
+    }
   };
 
   const handleChangePassword = async () => {
@@ -72,6 +109,16 @@ export default function Profil() {
         setIsPasswordModalOpen(false);
         setOldPassword('');
         setNewPassword('');
+
+        try {
+          const savedStr = await SecureStore.getItemAsync('_parent_saved_accounts');
+          if (savedStr) {
+            let accounts = JSON.parse(savedStr);
+            accounts = accounts.map((acc: any) => acc.nis === userData?.nis ? {...acc, password: newPassword} : acc);
+            await SecureStore.setItemAsync('_parent_saved_accounts', JSON.stringify(accounts));
+            setSavedAccounts(accounts);
+          }
+        } catch(e) {}
       } else {
         DeviceEventEmitter.emit('pwa_toast', { title: 'Gagal', body: res.message || 'Gagal mengubah password' });
       }
@@ -110,6 +157,47 @@ export default function Profil() {
           </TouchableOpacity>
           <Text style={tw`text-xl font-bold text-ink`}>{userData?.nama || 'Santri'}</Text>
           <Text style={tw`text-sm font-medium text-steel mt-1`}>NIS: {userData?.nis || '-'}</Text>
+        </View>
+
+        <View style={tw`flex-row items-center justify-between mb-3 ml-1 mr-1`}>
+          <Text style={tw`font-bold text-ink text-base`}>Akun Tersimpan</Text>
+          <TouchableOpacity onPress={() => router.push('/login')} style={tw`flex-row items-center bg-accent/10 px-3 py-1.5 rounded-full`}>
+            <Plus color={tw.color('accent')} size={14} />
+            <Text style={tw`text-xs font-bold text-accent ml-1`}>Tambah</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={tw`bg-white rounded-2xl shadow-sm border border-whisper overflow-hidden mb-6`}>
+          {savedAccounts.map((acc, idx) => {
+            const isActive = acc.nis === userData?.nis;
+            return (
+              <View key={idx} style={tw`flex-row items-center justify-between p-4 ${idx < savedAccounts.length - 1 ? 'border-b border-whisper' : ''} ${isActive ? 'bg-slate-50' : ''}`}>
+                <View style={tw`flex-row items-center flex-1 pr-2`}>
+                  <View style={tw`w-10 h-10 rounded-full ${isActive ? 'bg-accent/20' : 'bg-slate-100'} flex items-center justify-center mr-3`}>
+                    <Users color={isActive ? tw.color('accent') : tw.color('steel')} size={18} />
+                  </View>
+                  <View style={tw`flex-1`}>
+                    <Text style={tw`text-sm font-bold ${isActive ? 'text-accent' : 'text-ink'}`} numberOfLines={1}>{acc.nama}</Text>
+                    <Text style={tw`text-xs font-medium text-steel mt-0.5`}>NIS: {acc.nis}</Text>
+                  </View>
+                </View>
+                {!isActive ? (
+                  <TouchableOpacity onPress={() => switchAccount(acc)} style={tw`flex-row items-center bg-white border border-slate-200 px-3 py-1.5 rounded-xl`}>
+                    <Repeat color={tw.color('ink')} size={14} />
+                    <Text style={tw`text-xs font-bold text-ink ml-1.5`}>Beralih</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={tw`bg-accent px-3 py-1 rounded-xl`}>
+                    <Text style={tw`text-[10px] font-bold text-white`}>Aktif</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+          {savedAccounts.length === 0 && (
+            <View style={tw`p-4 items-center`}>
+              <Text style={tw`text-xs text-steel font-medium`}>Belum ada akun lain.</Text>
+            </View>
+          )}
         </View>
 
         <Text style={tw`font-bold text-ink text-base mb-3 ml-1`}>Pengaturan</Text>

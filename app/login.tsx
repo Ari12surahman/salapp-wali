@@ -47,11 +47,24 @@ export default function Login() {
     try {
       const res = await loginOrangTua(nis, password);
       if (res.success && res.user) {
-        await SecureStore.setItemAsync('_parent_session', JSON.stringify({
+        const sessionData = {
           nis: res.user.nis,
           nama: res.user.nama,
+          password: password,
           appName: "Portal Wali Santri"
-        }));
+        };
+        
+        await SecureStore.setItemAsync('_parent_session', JSON.stringify(sessionData));
+        
+        try {
+          const savedStr = await SecureStore.getItemAsync('_parent_saved_accounts');
+          let savedAccounts = savedStr ? JSON.parse(savedStr) : [];
+          savedAccounts = savedAccounts.filter((acc: any) => acc.nis !== sessionData.nis);
+          savedAccounts.push(sessionData);
+          await SecureStore.setItemAsync('_parent_saved_accounts', JSON.stringify(savedAccounts));
+        } catch (e) {
+          console.error("Gagal menyimpan multi-akun", e);
+        }
         
         if (!fcmToken) {
           fcmToken = await AsyncStorage.getItem('_push_token');
