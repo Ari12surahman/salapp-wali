@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, DeviceEventEmitter, Image } from 'react-native';
 import { User, Shield, LogOut, ChevronRight, X, Camera, Plus, Users, Repeat } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
@@ -23,23 +23,25 @@ export default function Profil() {
   // Multi Account State
   const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
 
-  useEffect(() => {
-    SecureStore.getItemAsync('_parent_session').then(session => {
-      if (session) {
-        const parsed = JSON.parse(session);
-        setUserData(parsed);
-        if (parsed.nis) {
-          AsyncStorage.getItem(`@profile_pic_${parsed.nis}`).then(pic => {
-            if (pic) setProfilePic(pic);
-          });
+  useFocusEffect(
+    useCallback(() => {
+      SecureStore.getItemAsync('_parent_session').then(session => {
+        if (session) {
+          const parsed = JSON.parse(session);
+          setUserData(parsed);
+          if (parsed.nis) {
+            AsyncStorage.getItem(`@profile_pic_${parsed.nis}`).then(pic => {
+              if (pic) setProfilePic(pic);
+            });
+          }
         }
-      }
-    });
+      });
 
-    SecureStore.getItemAsync('_parent_saved_accounts').then(savedStr => {
-      if (savedStr) setSavedAccounts(JSON.parse(savedStr));
-    });
-  }, []);
+      SecureStore.getItemAsync('_parent_saved_accounts').then(savedStr => {
+        if (savedStr) setSavedAccounts(JSON.parse(savedStr));
+      });
+    }, [])
+  );
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
