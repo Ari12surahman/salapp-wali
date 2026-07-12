@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, DeviceEventEmitter } from 'react-native';
-import { User, Shield, LogOut, ChevronRight, X } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, DeviceEventEmitter, Image } from 'react-native';
+import { User, Shield, LogOut, ChevronRight, X, Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
 import { gantiPasswordOrangTua } from '../../utils/supabaseApi';
 
@@ -16,11 +18,39 @@ export default function Profil() {
   const [newPassword, setNewPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
+  const [profilePic, setProfilePic] = useState<string | null>(null);
+
   useEffect(() => {
     SecureStore.getItemAsync('_parent_session').then(session => {
-      if (session) setUserData(JSON.parse(session));
+      if (session) {
+        const parsed = JSON.parse(session);
+        setUserData(parsed);
+        if (parsed.nis) {
+          AsyncStorage.getItem(`@profile_pic_${parsed.nis}`).then(pic => {
+            if (pic) setProfilePic(pic);
+          });
+        }
+      }
     });
   }, []);
+
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const base64Uri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      setProfilePic(base64Uri);
+      if (userData?.nis) {
+        await AsyncStorage.setItem(`@profile_pic_${userData.nis}`, base64Uri);
+      }
+    }
+  };
 
 
 
@@ -66,11 +96,18 @@ export default function Profil() {
 
       <ScrollView contentContainerStyle={tw`p-6 pb-32`}>
         <View style={tw`bg-white rounded-[24px] p-6 shadow-sm border border-whisper items-center mb-6`}>
-          <View style={tw`w-20 h-20 bg-accentLight rounded-full flex items-center justify-center mb-4`}>
-            <Text style={tw`text-3xl font-bold text-accent`}>
-              {userData?.nama ? userData.nama.charAt(0) : 'S'}
-            </Text>
-          </View>
+          <TouchableOpacity onPress={handlePickImage} style={tw`w-24 h-24 bg-accentLight rounded-full flex items-center justify-center mb-4 relative`}>
+            {profilePic ? (
+              <Image source={{ uri: profilePic }} style={tw`w-24 h-24 rounded-full`} />
+            ) : (
+              <Text style={tw`text-4xl font-bold text-accent`}>
+                {userData?.nama ? userData.nama.charAt(0) : 'S'}
+              </Text>
+            )}
+            <View style={tw`absolute bottom-0 right-0 bg-white p-1.5 rounded-full shadow-sm border border-slate-100`}>
+              <Camera color={tw.color('accent')} size={16} />
+            </View>
+          </TouchableOpacity>
           <Text style={tw`text-xl font-bold text-ink`}>{userData?.nama || 'Santri'}</Text>
           <Text style={tw`text-sm font-medium text-steel mt-1`}>NIS: {userData?.nis || '-'}</Text>
         </View>
