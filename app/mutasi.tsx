@@ -131,7 +131,7 @@ export default function MutasiTabungan() {
 
   return (
     <View style={tw`flex-1 bg-canvas`}>
-      <View style={tw`bg-white px-4 py-4 flex-row items-center border-b border-whisper pt-12 shadow-sm`}>
+      <View style={tw`bg-white px-4 py-4 flex-row items-center border-b border-whisper pt-6 shadow-sm`}>
         <TouchableOpacity 
           onPress={() => {
             if (router.canGoBack()) {

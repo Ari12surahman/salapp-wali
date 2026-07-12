@@ -133,7 +133,7 @@ export default function Profil() {
 
   return (
     <View style={tw`flex-1 bg-canvas`}>
-      <View style={tw`bg-white px-6 py-4 flex-row items-center border-b border-whisper pt-12 shadow-sm`}>
+      <View style={tw`bg-white px-6 py-4 flex-row items-center border-b border-whisper pt-6 shadow-sm`}>
         <View style={tw`w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center mr-3`}>
           <User color={tw.color('accent')} size={20} />
         </View>
