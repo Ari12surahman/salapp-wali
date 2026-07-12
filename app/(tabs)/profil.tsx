@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, DeviceEventEmitter } from 'react-native';
 import { User, Shield, LogOut, ChevronRight, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
@@ -31,22 +31,22 @@ export default function Profil() {
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword) {
-      Alert.alert('Error', 'Mohon isi password lama dan baru');
+      DeviceEventEmitter.emit('pwa_toast', { title: 'Error', body: 'Mohon isi password lama dan baru' });
       return;
     }
     setIsChangingPassword(true);
     try {
       const res = await gantiPasswordOrangTua(userData?.nis || '', oldPassword, newPassword);
       if (res.success) {
-        Alert.alert('Berhasil', 'Password berhasil diubah!');
+        DeviceEventEmitter.emit('pwa_toast', { title: 'Berhasil', body: 'Password berhasil diubah!' });
         setIsPasswordModalOpen(false);
         setOldPassword('');
         setNewPassword('');
       } else {
-        Alert.alert('Gagal', res.message || 'Gagal mengubah password');
+        DeviceEventEmitter.emit('pwa_toast', { title: 'Gagal', body: res.message || 'Gagal mengubah password' });
       }
     } catch (e) {
-      Alert.alert('Error', 'Terjadi kesalahan koneksi');
+      DeviceEventEmitter.emit('pwa_toast', { title: 'Error', body: 'Terjadi kesalahan koneksi' });
     } finally {
       setIsChangingPassword(false);
     }
@@ -101,7 +101,7 @@ export default function Profil() {
       {/* Ganti Password Modal */}
       <Modal visible={isPasswordModalOpen} animationType="fade" transparent>
         <View style={tw`flex-1 bg-ink/40 justify-center p-4`}>
-          <View style={tw`bg-surface w-full rounded-[24px] p-6 shadow-lg relative`}>
+          <View style={tw`bg-surface w-full max-w-md mx-auto rounded-[24px] p-6 shadow-lg relative`}>
             <TouchableOpacity onPress={() => setIsPasswordModalOpen(false)} style={tw`absolute top-4 right-4 z-50 w-8 h-8 bg-slate-100 rounded-full items-center justify-center`}>
               <X color={tw.color('steel')} size={16} />
             </TouchableOpacity>
