@@ -190,6 +190,20 @@ export default function ReceiptModal() {
                 <Text style={tw`text-sm font-bold text-ink`}>Total Bayar</Text>
                 <Text style={tw`text-lg font-black text-accent`}>Rp {(data.nominal || 0).toLocaleString("id-ID")}</Text>
               </View>
+
+              <View style={tw`mt-4 pt-3 border-t border-dashed border-whisper flex-row justify-between items-center`}>
+                <Text style={tw`text-xs text-steel`}>Status Pembayaran</Text>
+                <View style={tw`${data.status === 'Cicilan' || data.status === 'Cicil' ? 'bg-amber-100' : 'bg-success/10'} px-2.5 py-1 rounded-md`}>
+                  <Text style={tw`text-xs font-bold ${data.status === 'Cicilan' || data.status === 'Cicil' ? 'text-amber-600' : 'text-success'}`}>{data.status ? data.status.toUpperCase() : 'LUNAS'}</Text>
+                </View>
+              </View>
+              
+              {data.sisa > 0 && (
+                <View style={tw`mt-2 pt-2 border-t border-whisper flex-row justify-between items-center`}>
+                  <Text style={tw`text-xs text-amber-600 font-bold`}>Sisa Tagihan</Text>
+                  <Text style={tw`text-xs font-bold text-amber-600`}>Rp {Number(data.sisa).toLocaleString("id-ID")}</Text>
+                </View>
+              )}
             </View>
 
             <View style={tw`flex-row gap-3`}>
