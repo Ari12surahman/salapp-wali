@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput, DeviceEventEmitter, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput, DeviceEventEmitter, Platform, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   Receipt, Wallet, TrendingUp, AlertCircle, ArrowRight, ArrowDownRight, 
-  ShieldCheck, ShoppingBag, BookOpen, Users, Heart, X, Store, CheckCircle2, Clock, LogOut, Search 
+  ShieldCheck, ShoppingBag, BookOpen, Users, Heart, X, Store, CheckCircle2, Clock, LogOut, Search, User 
 } from 'lucide-react-native';
 import tw from '../../tailwind';
 import { getParentData, savePushToken } from '../../utils/supabaseApi';
@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [catatanJajan, setCatatanJajan] = useState('');
   const [searchJajan, setSearchJajan] = useState('');
   const [limitJajan, setLimitJajan] = useState(10);
+  const [profilePic, setProfilePic] = useState<string | null>(null);
 
   const loadData = useCallback(async (isBackground = false) => {
     try {
@@ -41,6 +42,10 @@ export default function Dashboard() {
       }
       const user = JSON.parse(session);
       setUserData(user);
+
+      const pic = await AsyncStorage.getItem(`@profile_pic_${user.nis}`);
+      if (pic) setProfilePic(pic);
+      else setProfilePic(null);
 
       // 0. Sync Push Token ke Supabase SETIAP kali app dibuka
       const pushToken = await AsyncStorage.getItem('_push_token');
@@ -257,9 +262,20 @@ export default function Dashboard() {
 
         
         <View style={tw`flex-row justify-between items-center mb-6`}>
-          <View>
-            <Text style={tw`text-steel text-sm font-medium`}>Assalamu'alaikum,</Text>
-            <Text style={tw`text-ink text-xl font-bold`}>{userData?.nama || 'Wali Santri'}</Text>
+          <View style={tw`flex-row items-center flex-1 pr-4`}>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/profil')}>
+              {profilePic ? (
+                <Image source={{ uri: profilePic }} style={tw`w-12 h-12 rounded-full mr-3 border-2 border-white shadow-sm`} />
+              ) : (
+                <View style={tw`w-12 h-12 rounded-full mr-3 bg-accent/10 flex items-center justify-center border-2 border-white shadow-sm`}>
+                  <User color={tw.color('accent')} size={24} />
+                </View>
+              )}
+            </TouchableOpacity>
+            <View style={tw`flex-1`}>
+              <Text style={tw`text-steel text-sm font-medium`}>Assalamu'alaikum,</Text>
+              <Text style={tw`text-ink text-xl font-bold`} numberOfLines={1}>{userData?.nama || 'Wali Santri'}</Text>
+            </View>
           </View>
           <TouchableOpacity 
             onPress={async () => {
