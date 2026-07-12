@@ -463,8 +463,9 @@ export default function Dashboard() {
 
       {/* Titip Jajan Modal */}
       <Modal visible={isTitipJajanOpen} animationType="slide">
-        <View style={tw`flex-1 bg-canvas`}>
-          {/* Modal Header */}
+        <View style={Platform.OS === 'web' ? { flex: 1, maxWidth: 480, width: '100%', marginHorizontal: 'auto', backgroundColor: '#f8fafc' } : { flex: 1, backgroundColor: '#f8fafc' }}>
+          <View style={tw`flex-1 bg-canvas`}>
+            {/* Modal Header */}
           <View style={tw`bg-white px-5 py-4 flex-row items-center justify-between border-b border-whisper shadow-sm pt-12`}>
             <View style={tw`flex-row items-center`}>
               <View style={tw`w-10 h-10 bg-accentLight rounded-xl flex items-center justify-center`}>
@@ -594,6 +595,7 @@ export default function Dashboard() {
               </TouchableOpacity>
             </View>
           )}
+        </View>
         </View>
       </Modal>
     </View>
