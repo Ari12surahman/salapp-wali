@@ -15,6 +15,7 @@ export default function Riwayat() {
   const [dataPembayaran, setDataPembayaran] = useState<any[]>([]);
   const [dataPesanan, setDataPesanan] = useState<any[]>([]);
   const { openReceipt } = useReceiptStore();
+  const [historyLimit, setHistoryLimit] = useState(10);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreTabungan, setHasMoreTabungan] = useState(true);
@@ -203,8 +204,9 @@ export default function Riwayat() {
               <Text style={tw`text-xs text-steel`}>Belum ada riwayat transaksi.</Text>
             </View>
           ) : (
-            historyData.map((item, idx) => {
-              const isTabungan = !!item.jenis;
+            <>
+              {historyData.slice(0, historyLimit).map((item, idx) => {
+                const isTabungan = !!item.jenis;
               const isPesanan = !!item.TrxID;
               const isSetor = isTabungan && (item.jenis === "Setor" || item.jenis === "Masuk");
               
@@ -264,7 +266,17 @@ export default function Riwayat() {
                   </View>
                 </TouchableOpacity>
               );
-            })
+            })}
+            
+            {historyLimit < historyData.length && (
+              <TouchableOpacity 
+                onPress={() => setHistoryLimit(prev => prev + 10)}
+                style={tw`w-full bg-white border border-slate-200 py-3 rounded-xl flex-row justify-center items-center mt-2`}
+              >
+                <Text style={tw`text-sm font-bold text-steel`}>Tampilkan lebih banyak</Text>
+              </TouchableOpacity>
+            )}
+            </>
           )}
         </View>
         

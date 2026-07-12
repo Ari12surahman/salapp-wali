@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [isTitipJajanOpen, setIsTitipJajanOpen] = useState(false);
   const [catatanJajan, setCatatanJajan] = useState('');
   const [searchJajan, setSearchJajan] = useState('');
+  const [limitJajan, setLimitJajan] = useState(10);
 
   const loadData = useCallback(async (isBackground = false) => {
     try {
@@ -503,6 +504,7 @@ export default function Dashboard() {
                           key={idx} 
                           onPress={() => {
                             setActiveWarungId(wId);
+                            setLimitJajan(10);
                             if (jajanCart.length > 0 && jajanCart[0].warungId !== wId) {
                               setJajanCart([]); 
                             }
@@ -541,7 +543,7 @@ export default function Dashboard() {
                     const warungMatch = (p.warungid || p.WarungID) === activeWarungId;
                     const nameMatch = (p.nama || p.Nama || '').toLowerCase().includes(searchJajan.toLowerCase());
                     return warungMatch && nameMatch;
-                  }).map((p: any, idx: number) => {
+                  }).slice(0, limitJajan).map((p: any, idx: number) => {
                     const pId = p.id || p.ID;
                     const pNama = p.nama || p.Nama;
                     const pHarga = Number(p.hargajual || p.HargaJual) || 0;
@@ -589,6 +591,19 @@ export default function Dashboard() {
                   <View style={tw`items-center py-10 bg-white rounded-2xl border border-whisper border-dashed`}>
                     <Text style={tw`text-xs font-medium text-steel`}>{searchJajan ? 'Pencarian tidak ditemukan.' : 'Belum ada produk di warung ini.'}</Text>
                   </View>
+                )}
+                
+                {dataPOSProduk.filter(p => {
+                  const warungMatch = (p.warungid || p.WarungID) === activeWarungId;
+                  const nameMatch = (p.nama || p.Nama || '').toLowerCase().includes(searchJajan.toLowerCase());
+                  return warungMatch && nameMatch;
+                }).length > limitJajan && (
+                  <TouchableOpacity 
+                    onPress={() => setLimitJajan(prev => prev + 10)}
+                    style={tw`w-full bg-white border border-slate-200 py-3 rounded-xl flex-row justify-center items-center mt-2`}
+                  >
+                    <Text style={tw`text-sm font-bold text-steel`}>Tampilkan lebih banyak</Text>
+                  </TouchableOpacity>
                 )}
               </>
             )}
