@@ -153,7 +153,7 @@ export default function Dashboard() {
 
     // 2. Listen for Real-time changes in Transaksi (Efektif & Hemat Egress karena ada filter SantriID)
     const channel = supabase
-      .channel('realtime-wali-transaksi')
+      .channel(`realtime-wali-transaksi-${Date.now()}`)
       .on(
         'postgres_changes',
         { 
@@ -171,7 +171,7 @@ export default function Dashboard() {
 
     // 3. Listen for Real-time changes in Tagihan
     const tagihanChannel = supabase
-      .channel('realtime-wali-tagihan')
+      .channel(`realtime-wali-tagihan-${Date.now()}`)
       .on(
         'postgres_changes',
         {
