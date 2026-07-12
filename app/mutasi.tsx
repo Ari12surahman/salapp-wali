@@ -229,8 +229,8 @@ export default function MutasiTabungan() {
                       <Text style={tw`text-[11px] text-steel font-medium mt-0.5`}>{safeDate(dateStr).toLocaleDateString('id-ID')}</Text>
                     </View>
                   </View>
-                  <View style={tw`items-end ml-2 flex-shrink-0 w-24`}>
-                    <Text style={tw`font-bold text-sm mb-1 text-${colorClass}`} numberOfLines={1} adjustsFontSizeToFit>
+                  <View style={tw`items-end ml-2`}>
+                    <Text style={tw`font-bold text-sm mb-1 text-${colorClass}`}>
                       {isIncome ? '+' : '-'} Rp {Math.abs(Number(nominalNum) || 0).toLocaleString('id-ID')}
                     </Text>
                     <Text style={tw`text-[10px] text-steel`}>{textJenis}</Text>
