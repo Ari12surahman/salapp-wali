@@ -149,10 +149,10 @@ export default function Riwayat() {
       if (!isNaN(d.getTime())) return d.getTime();
     }
     
-    if (item.id && typeof item.id === 'string' && item.id.includes('INV-PKS-')) {
-      const parts = item.id.split('-');
-      if (parts.length >= 3) {
-        const ts = parseInt(parts[2], 10);
+    if (item.id && typeof item.id === 'string') {
+      const match = item.id.match(/\d{13}/);
+      if (match) {
+        const ts = parseInt(match[0], 10);
         if (!isNaN(ts) && ts > 1000000000000) return ts;
       }
     }
