@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput, DeviceEventEmitter, Platform, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, ActivityIndicator, TextInput, DeviceEventEmitter, Platform, Image, Alert, Linking } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Clipboard from 'expo-clipboard';
 import { 
   Receipt, Wallet, TrendingUp, AlertCircle, ArrowRight, ArrowDownRight, 
-  ShieldCheck, ShoppingBag, BookOpen, Users, Heart, X, Store, CheckCircle2, Clock, LogOut, Search, User 
+  ShieldCheck, ShoppingBag, BookOpen, Users, Heart, X, Store, CheckCircle2, Clock, LogOut, Search, User, MessageCircle 
 } from 'lucide-react-native';
 import tw from '../../tailwind';
-import { getParentData, savePushToken } from '../../utils/supabaseApi';
+import { getParentData, savePushToken, getAdminContact } from '../../utils/supabaseApi';
 import { supabase } from '../../utils/supabase';
 import { usePakasirStore } from '../../store/usePakasirStore';
 
@@ -32,6 +33,9 @@ export default function Dashboard() {
   const [searchJajan, setSearchJajan] = useState('');
   const [limitJajan, setLimitJajan] = useState(10);
   const [profilePic, setProfilePic] = useState<string | null>(null);
+
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [adminContactsList, setAdminContactsList] = useState<any[]>([]);
 
   const loadData = useCallback(async (isBackground = false) => {
     try {
@@ -217,6 +221,16 @@ export default function Dashboard() {
     setCatatanJajan('');
   };
 
+  const handleHubungiPengurus = async () => {
+    const contacts = await getAdminContact();
+    if (contacts && Array.isArray(contacts) && contacts.length > 0) {
+      setAdminContactsList(contacts);
+      setIsContactModalOpen(true);
+    } else {
+      Alert.alert("Info", "Nomor pengurus belum diatur oleh Admin.");
+    }
+  };
+
   const displayableTagihan = useMemo(() => {
     return dataTagihan.filter(t => {
       const masterConfig = dataMasterTagihan.find((m: any) => t.tagihan.startsWith(m.tagihan));
@@ -367,12 +381,12 @@ export default function Dashboard() {
               <Text style={tw`text-[10px] font-bold text-steel text-center`}>Pengasuhan</Text>
             </View>
 
-            <View style={tw`items-center flex-1 opacity-50`}>
-              <View style={tw`w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mb-2`}>
-                <Heart color={tw.color('steel')} size={24} />
+            <TouchableOpacity onPress={handleHubungiPengurus} style={tw`items-center flex-1`}>
+              <View style={tw`w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mb-2 border border-green-100`}>
+                <MessageCircle color={tw.color('green-600')} size={24} />
               </View>
-              <Text style={tw`text-[10px] font-bold text-steel text-center`}>Tahfidz</Text>
-            </View>
+              <Text style={tw`text-[10px] font-bold text-ink text-center`}>Pusat Bantuan</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -653,6 +667,53 @@ export default function Dashboard() {
         </View>
         </View>
       </Modal>
+
+      {/* MODAL KONTAK PENGURUS */}
+      <Modal visible={isContactModalOpen} transparent animationType="fade">
+        <View style={tw`flex-1 bg-black/50 justify-end items-center`}>
+          <View style={tw`bg-white rounded-t-3xl p-6 w-full max-w-md pb-8`}>
+            <View style={tw`flex-row justify-between items-center mb-6`}>
+              <View>
+                <Text style={tw`text-xl font-bold text-ink`}>Pusat Bantuan</Text>
+                <Text style={tw`text-sm text-steel mt-1`}>Pilih pengurus yang ingin dihubungi</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsContactModalOpen(false)} style={tw`w-10 h-10 bg-slate-100 rounded-full items-center justify-center`}>
+                <X color={tw.color('slate-500')} size={20} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={tw`max-h-96`} showsVerticalScrollIndicator={false}>
+              {adminContactsList.map((c, i) => (
+                <View key={i} style={tw`flex-row items-center justify-between p-4 mb-3 border border-slate-100 rounded-2xl bg-canvas`}>
+                  <View style={tw`flex-row items-center flex-1`}>
+                    <View style={tw`w-12 h-12 bg-green-50 rounded-full items-center justify-center mr-4`}>
+                      <User color={tw.color('green-600')} size={20} />
+                    </View>
+                    <View style={tw`flex-1 mr-2`}>
+                      <Text style={tw`text-base font-bold text-ink mb-0.5`} numberOfLines={1}>{c.nama || 'Pengurus'}</Text>
+                      <Text style={tw`text-sm text-steel`}>+{c.phone}</Text>
+                    </View>
+                  </View>
+                  <View style={tw`flex-row gap-2`}>
+                    <TouchableOpacity onPress={async () => {
+                      await Clipboard.setStringAsync(c.phone);
+                      Alert.alert("Berhasil", `Nomor ${c.nama || 'pengurus'} telah disalin.`);
+                    }} style={tw`px-3 py-2 bg-slate-100 rounded-lg items-center justify-center`}>
+                      <Text style={tw`text-xs font-bold text-slate-600`}>Salin</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => {
+                      Linking.openURL(`https://wa.me/${c.phone}`);
+                    }} style={tw`px-3 py-2 bg-green-500 rounded-lg items-center justify-center`}>
+                      <Text style={tw`text-xs font-bold text-white`}>Chat</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }

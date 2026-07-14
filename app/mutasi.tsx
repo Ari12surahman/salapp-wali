@@ -120,13 +120,37 @@ export default function MutasiTabungan() {
     return new Date(0);
   };
 
+  const getSortTime = (item: any) => {
+    if (item.Waktu) {
+      const d = new Date(item.Waktu);
+      if (!isNaN(d.getTime())) return d.getTime();
+    }
+    
+    if (item.id && typeof item.id === 'string') {
+      const match = item.id.match(/\d{13}/);
+      if (match) {
+        const ts = parseInt(match[0], 10);
+        if (!isNaN(ts) && ts > 1000000000000) return ts;
+      }
+    }
+    
+    if (item.tanggal) {
+       const d = new Date(item.tanggal);
+       if (!isNaN(d.getTime())) return d.getTime();
+       if (typeof item.tanggal === 'string' && item.tanggal.includes('-')) {
+         const p = item.tanggal.split('-');
+         if (p.length === 3) return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])).getTime();
+       }
+    }
+    
+    return 0;
+  };
+
   const historyData = [
     ...dataTabungan.filter(t => !t.keterangan?.includes('Kantin')), 
     ...dataPesanan.filter(t => t.Metode === 'Tabungan')
   ].sort((a, b) => {
-    const dateA = a.tanggal || a.Waktu;
-    const dateB = b.tanggal || b.Waktu;
-    return safeDate(dateB).getTime() - safeDate(dateA).getTime();
+    return getSortTime(b) - getSortTime(a);
   });
 
   return (

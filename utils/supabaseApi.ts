@@ -331,3 +331,35 @@ export const gantiPasswordOrangTua = async (nis: string, oldPassword: string, ne
     return { success: false, message: e.message };
   }
 };
+
+// ─────────────────────────────────────────────────────────────────
+// 10. GET KONTAK ADMIN
+// ─────────────────────────────────────────────────────────────────
+export const getAdminContact = async () => {
+  try {
+    const { data } = await supabase
+      .from('MasterConfig')
+      .select('kunci, nilai')
+      .in('kunci', ['adminContacts', 'adminPhone']);
+    
+    if (data && data.length > 0) {
+      const contactsEntry = data.find(d => d.kunci === 'adminContacts');
+      if (contactsEntry && contactsEntry.nilai) {
+        try {
+          return JSON.parse(contactsEntry.nilai);
+        } catch (e) {
+          return null;
+        }
+      }
+      
+      const phoneEntry = data.find(d => d.kunci === 'adminPhone');
+      if (phoneEntry && phoneEntry.nilai) {
+        return [{ nama: 'Pengurus', phone: phoneEntry.nilai }];
+      }
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
