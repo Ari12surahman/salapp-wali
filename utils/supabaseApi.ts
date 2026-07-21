@@ -363,3 +363,38 @@ export const getAdminContact = async () => {
   }
 };
 
+
+// ─────────────────────────────────────────────────────────────────
+// 11. LIMIT JAJAN HARIAN
+// ─────────────────────────────────────────────────────────────────
+export const getLimitJajan = async (nis: string) => {
+  try {
+    const { data } = await supabase
+      .from('Data Santri')
+      .select('limit_jajan_harian')
+      .in('nis', nisVariants(nis));
+    if (data && data.length > 0) {
+      return { success: true, limit: Number(data[0].limit_jajan_harian) || 0 };
+    }
+    return { success: false, limit: 0 };
+  } catch (e) {
+    return { success: false, limit: 0 };
+  }
+};
+
+export const updateLimitJajan = async (nis: string, limit: number) => {
+  try {
+    const { data } = await supabase
+      .from('Data Santri')
+      .select('nis')
+      .in('nis', nisVariants(nis));
+
+    if (!data || data.length === 0) {
+      return { success: false, message: 'Data Santri tidak ditemukan' };
+    }
+    await supabase.from('Data Santri').update({ limit_jajan_harian: limit }).eq('nis', data[0].nis);
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, message: e.message };
+  }
+};

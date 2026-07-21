@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, DeviceEventEmitter, Image } from 'react-native';
-import { User, Shield, LogOut, ChevronRight, X, Camera, Plus, Users, Repeat } from 'lucide-react-native';
+import { User, Shield, LogOut, ChevronRight, X, Camera, Plus, Users, Repeat, Wallet } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as SecureStore from '../../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../../tailwind';
-import { gantiPasswordOrangTua } from '../../utils/supabaseApi';
+import { gantiPasswordOrangTua, getLimitJajan, updateLimitJajan } from '../../utils/supabaseApi';
 
 export default function Profil() {
   const router = useRouter();
@@ -23,6 +23,12 @@ export default function Profil() {
   // Multi Account State
   const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
 
+  // Limit Jajan State
+  const [limitJajan, setLimitJajan] = useState(0);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [tempLimit, setTempLimit] = useState('');
+  const [isSavingLimit, setIsSavingLimit] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       SecureStore.getItemAsync('_parent_session').then(session => {
@@ -32,6 +38,9 @@ export default function Profil() {
           if (parsed.nis) {
             AsyncStorage.getItem(`@profile_pic_${parsed.nis}`).then(pic => {
               if (pic) setProfilePic(pic);
+            });
+            getLimitJajan(parsed.nis).then(res => {
+              if (res.success) setLimitJajan(res.limit);
             });
           }
         }
@@ -131,6 +140,26 @@ export default function Profil() {
     }
   };
 
+  const handleSaveLimit = async () => {
+    if (!userData?.nis) return;
+    const val = parseInt(tempLimit.replace(/\D/g, '') || '0', 10);
+    setIsSavingLimit(true);
+    try {
+      const res = await updateLimitJajan(userData.nis, val);
+      if (res.success) {
+        setLimitJajan(val);
+        setIsLimitModalOpen(false);
+        DeviceEventEmitter.emit('pwa_toast', { title: 'Berhasil', body: 'Limit jajan berhasil diperbarui' });
+      } else {
+        DeviceEventEmitter.emit('pwa_toast', { title: 'Gagal', body: res.message || 'Gagal menyimpan limit' });
+      }
+    } catch (e) {
+      DeviceEventEmitter.emit('pwa_toast', { title: 'Error', body: 'Terjadi kesalahan koneksi' });
+    } finally {
+      setIsSavingLimit(false);
+    }
+  };
+
   return (
     <View style={tw`flex-1 bg-canvas`}>
       <View style={tw`bg-white px-6 py-4 flex-row items-center border-b border-whisper pt-6 shadow-sm`}>
@@ -211,8 +240,28 @@ export default function Profil() {
         <Text style={tw`font-bold text-ink text-base mb-3 ml-1`}>Pengaturan</Text>
         <View style={tw`bg-white rounded-2xl shadow-sm border border-whisper overflow-hidden mb-6`}>
           <TouchableOpacity 
-            onPress={() => setIsPasswordModalOpen(true)}
+            onPress={() => {
+              setTempLimit(limitJajan ? limitJajan.toString() : '0');
+              setIsLimitModalOpen(true);
+            }}
             style={tw`flex-row items-center justify-between p-4 border-b border-whisper`}
+          >
+            <View style={tw`flex-row items-center`}>
+              <View style={tw`w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mr-3`}>
+                <Wallet color={tw.color('steel')} size={16} />
+              </View>
+              <View>
+                <Text style={tw`text-sm font-bold text-ink`}>Limit Jajan Harian</Text>
+                <Text style={tw`text-[10px] text-steel mt-0.5`}>
+                  {limitJajan > 0 ? `Rp ${limitJajan.toLocaleString('id-ID')} / hari` : 'Tidak ada limit'}
+                </Text>
+              </View>
+            </View>
+            <ChevronRight color={tw.color('steel')} size={16} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => setIsPasswordModalOpen(true)}
+            style={tw`flex-row items-center justify-between p-4`}
           >
             <View style={tw`flex-row items-center`}>
               <View style={tw`w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mr-3`}>
@@ -286,6 +335,48 @@ export default function Profil() {
           </View>
         </View>
       </Modal>
+      {/* Limit Jajan Modal */}
+      <Modal visible={isLimitModalOpen} animationType="fade" transparent>
+        <View style={tw`flex-1 bg-ink/40 justify-center p-4`}>
+          <View style={tw`bg-surface w-full max-w-md mx-auto rounded-[24px] p-6 shadow-lg relative`}>
+            <TouchableOpacity onPress={() => setIsLimitModalOpen(false)} style={tw`absolute top-4 right-4 z-50 w-8 h-8 bg-slate-100 rounded-full items-center justify-center`}>
+              <X color={tw.color('steel')} size={16} />
+            </TouchableOpacity>
+
+            <View style={tw`items-center mb-6`}>
+              <View style={tw`w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center mb-3`}>
+                <Wallet color={tw.color('accent')} size={24} />
+              </View>
+              <Text style={tw`text-xl font-bold text-ink`}>Limit Jajan Harian</Text>
+              <Text style={tw`text-xs text-steel mt-1 text-center`}>Atur batas maksimal pengeluaran uang jajan santri per hari. Isi 0 jika bebas (tanpa limit).</Text>
+            </View>
+
+            <View style={tw`mb-6`}>
+              <Text style={tw`text-xs font-bold text-steel mb-2`}>Nominal (Rp)</Text>
+              <TextInput
+                style={tw`w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-ink text-lg font-bold`}
+                placeholder="0"
+                keyboardType="numeric"
+                value={tempLimit ? parseInt(tempLimit.replace(/\D/g, '')).toLocaleString('id-ID') : ''}
+                onChangeText={(text) => setTempLimit(text.replace(/\D/g, ''))}
+                placeholderTextColor={tw.color('slate-300')}
+              />
+            </View>
+
+            <TouchableOpacity 
+              onPress={handleSaveLimit}
+              disabled={isSavingLimit}
+              style={tw`w-full bg-accent py-3.5 rounded-xl flex items-center flex-row justify-center ${isSavingLimit ? 'opacity-70' : ''}`}
+            >
+              {isSavingLimit ? (
+                <ActivityIndicator color="white" style={tw`mr-2`} />
+              ) : null}
+              <Text style={tw`text-white font-bold text-base`}>Simpan Limit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
