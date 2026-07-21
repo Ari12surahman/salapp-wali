@@ -199,13 +199,18 @@ export default function PakasirModal() {
         return 0;
       };
 
+      let appFee = 0; // Default 0
+      
       if (type === "TITIP_JAJAN") {
          // Khusus TITIP_JAJAN (Warung), gunakan kredensial POS dari tabel Pengaturan
          if (bulkData.pengaturan) {
            const dom = bulkData.pengaturan.find((p: any) => p.Kunci === "PAKASIR_DOMAIN" || p.Kunci === "pakasir_domain")?.Nilai;
            const apiK = bulkData.pengaturan.find((p: any) => p.Kunci === "PAKASIR_APIKEY" || p.Kunci === "pakasir_apikey")?.Nilai;
+           const fee = bulkData.pengaturan.find((p: any) => p.Kunci === "BIAYA_APLIKASI" || p.Kunci === "biaya_aplikasi")?.Nilai;
+           
            if (dom) slug = dom;
            if (apiK) apiKey = apiK;
+           if (fee) appFee = Number(fee) || 0;
          }
       } else if (bulkData?.masterBills && bulkData.masterBills.length > 0) {
         let masterTagihanObj = null;
@@ -222,10 +227,18 @@ export default function PakasirModal() {
         if (masterTagihanObj) {
            if (masterTagihanObj.pakasirSlug) slug = masterTagihanObj.pakasirSlug;
            if (masterTagihanObj.pakasirApiKey) apiKey = masterTagihanObj.pakasirApiKey;
+           
+           // Coba ambil dari berbagai kemungkinan nama kolom/key di admin
+           const masterAppFee = masterTagihanObj.biaya_aplikasi || masterTagihanObj.biayaAplikasi || masterTagihanObj['Biaya Aplikasi'];
+           if (masterAppFee !== undefined) {
+             appFee = Number(masterAppFee) || 0;
+           } else {
+             // Fallback jika belum ditambahkan di admin, sementara 0.
+             appFee = 0;
+           }
         }
       }
       
-      let appFee = 30000; // Biaya aplikasi langganan (sementara 30rb untuk semua)
       const finalAmountToPay = bayarAmount + appFee;
 
       const payload = {
