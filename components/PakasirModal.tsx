@@ -183,6 +183,22 @@ export default function PakasirModal() {
         return;
       }
 
+      // Fungsi hitung Biaya Admin Pakasir
+      const calculateAdminFee = (paymentMethod: string, amount: number) => {
+        if (paymentMethod === 'qris') {
+          if (amount > 105000) {
+            return Math.ceil(amount * 0.01);
+          } else {
+            return Math.ceil((amount * 0.007) + 310);
+          }
+        } else if (['bri_va', 'bni_va', 'atm_bersama_va', 'bnc_va', 'cimb_niaga_va', 'maybank_va', 'permata_va'].includes(paymentMethod)) {
+          return 3500;
+        } else if (['artha_graha_va', 'sampoerna_va'].includes(paymentMethod)) {
+          return 2000;
+        }
+        return 0;
+      };
+
       if (type === "TITIP_JAJAN") {
          // Khusus TITIP_JAJAN (Warung), gunakan kredensial POS dari tabel Pengaturan
          if (bulkData.pengaturan) {
@@ -271,7 +287,15 @@ export default function PakasirModal() {
         const isSandboxServer = res.payment.payment_number.toUpperCase().includes('SANDBOX') || res.payment.payment_number === '123123123';
 
         // Hitung biaya admin dari PG (contoh res.payment.total_amount atau fee)
-        const totalFromApi = res.payment.total_amount || res.payment.amount || finalAmountToPay;
+        let totalFromApi = res.payment.total_amount || res.payment.amount;
+        
+        // Jika API tidak memberikan total_amount (atau totalnya sama dengan request awal tanpa admin), 
+        // kita gunakan perhitungan manual sesuai tabel Pakasir
+        if (!totalFromApi || totalFromApi === finalAmountToPay) {
+          const manualAdminFee = calculateAdminFee(method, finalAmountToPay);
+          totalFromApi = finalAmountToPay + manualAdminFee;
+        }
+        
         const adminFee = totalFromApi - finalAmountToPay;
 
         if (method === "qris") {
