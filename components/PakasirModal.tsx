@@ -879,6 +879,9 @@ export default function PakasirModal() {
                     <Text style={tw`text-sm text-steel mb-2`}>
                       Bayar sebelum batas waktu: <Text style={tw`font-bold text-red-500`}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</Text>
                     </Text>
+                    <Text style={tw`text-xs font-bold text-red-500 text-center mb-6 px-4`}>
+                      ⚠️ Mohon JANGAN tutup halaman ini atau keluar dari aplikasi sebelum pembayaran selesai.
+                    </Text>
                   </>
                 ) : (
                   <Text style={tw`text-base font-bold text-red-500 mb-6`}>Waktu Pembayaran Habis!</Text>
