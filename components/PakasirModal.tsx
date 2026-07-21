@@ -72,11 +72,15 @@ export default function PakasirModal() {
   const [bayarAmount, setBayarAmount] = useState(0);
   const [pollingInterval, setPollingInterval] = useState<any>(null);
   const [qrisState, setQrisState] = useState<{
-    step: "CHOOSE_METHOD" | "LOADING" | "SHOW_QR" | "SHOW_VA" | "SUCCESS" | null;
+    step: "CHOOSE_METHOD" | "LOADING" | "SHOW_QR" | "SHOW_VA" | "SUCCESS" | "SELECT_BULAN" | "SELECT_TAHUN" | null;
     method: string | null;
     code: string | null;
     txId: string | null;
     isSandbox?: boolean;
+    url?: string;
+    adminFee?: number;
+    appFee?: number;
+    totalAmount?: number;
   }>({ step: null, method: null, code: null, txId: null, isSandbox: false });
 
   const [timeLeft, setTimeLeft] = useState(900);
@@ -205,10 +209,13 @@ export default function PakasirModal() {
         }
       }
       
+      let appFee = 30000; // Biaya aplikasi langganan (sementara 30rb untuk semua)
+      const finalAmountToPay = bayarAmount + appFee;
+
       const payload = {
         slug,
         apiKey,
-        amount: bayarAmount,
+        amount: finalAmountToPay,
         orderId: orderId,
         method: method
       };
@@ -217,7 +224,7 @@ export default function PakasirModal() {
       let dbPayload: any = {
         orderId: orderId,
         method: method,
-        amount: bayarAmount,
+        amount: finalAmountToPay,
         tagihanData: data,
         isBulk: false,
         slug: slug,
@@ -263,6 +270,10 @@ export default function PakasirModal() {
         // Detect sandbox mode from the API response's QR Code String or VA dummy number
         const isSandboxServer = res.payment.payment_number.toUpperCase().includes('SANDBOX') || res.payment.payment_number === '123123123';
 
+        // Hitung biaya admin dari PG (contoh res.payment.total_amount atau fee)
+        const totalFromApi = res.payment.total_amount || res.payment.amount || finalAmountToPay;
+        const adminFee = totalFromApi - finalAmountToPay;
+
         if (method === "qris") {
           setTimeLeft(900);
           setQrisState({
@@ -270,7 +281,10 @@ export default function PakasirModal() {
             method,
             txId: orderId,
             code: res.payment.payment_number,
-            isSandbox: isSandboxServer
+            isSandbox: isSandboxServer,
+            adminFee: adminFee,
+            appFee: appFee,
+            totalAmount: totalFromApi
           });
         } else {
           setTimeLeft(900);
@@ -279,7 +293,10 @@ export default function PakasirModal() {
             method,
             txId: orderId,
             code: res.payment.payment_number,
-            isSandbox: isSandboxServer
+            isSandbox: isSandboxServer,
+            adminFee: adminFee,
+            appFee: appFee,
+            totalAmount: totalFromApi
           });
         }
         // Start polling
@@ -795,18 +812,48 @@ export default function PakasirModal() {
             )}
 
             {(qrisState.step === "SHOW_QR" || qrisState.step === "SHOW_VA") && (
-              <View style={tw`items-center pt-2`}>
-                <Text style={tw`text-xl font-bold text-ink mb-2`}>
-                  {qrisState.method === "qris" ? "Scan QRIS" : "Transfer VA"}
+              <View style={tw`items-center pt-2 w-full`}>
+                <Text style={tw`text-xl font-bold text-ink mb-4`}>
+                  {qrisState.method === "qris" ? "Pembayaran QRIS" : "Transfer Virtual Account"}
                 </Text>
                 
+                {/* Rincian Pembayaran (Tabel) */}
+                <View style={tw`w-full bg-white border border-whisper rounded-lg overflow-hidden mb-6`}>
+                  <View style={tw`bg-slate-50 p-3 border-b border-whisper items-center`}>
+                    <Text style={tw`font-bold text-ink text-sm`}>Halaman Pembayaran</Text>
+                  </View>
+                  <View style={tw`p-0`}>
+                    <View style={tw`flex-row border-b border-whisper`}>
+                      <View style={tw`w-1/3 p-3 bg-slate-50 border-r border-whisper justify-center`}><Text style={tw`text-steel text-xs font-medium`}>Order Id</Text></View>
+                      <View style={tw`w-2/3 p-3 justify-center`}><Text style={tw`text-ink text-xs`}>{qrisState.txId}</Text></View>
+                    </View>
+                    <View style={tw`flex-row border-b border-whisper`}>
+                      <View style={tw`w-1/3 p-3 bg-slate-50 border-r border-whisper justify-center`}><Text style={tw`text-steel text-xs font-medium`}>Nominal</Text></View>
+                      <View style={tw`w-2/3 p-3 justify-center`}><Text style={tw`text-ink text-xs`}>Rp {bayarAmount.toLocaleString("id-ID")}</Text></View>
+                    </View>
+                    <View style={tw`flex-row border-b border-whisper`}>
+                      <View style={tw`w-1/3 p-3 bg-slate-50 border-r border-whisper justify-center`}><Text style={tw`text-steel text-xs font-medium`}>Metode</Text></View>
+                      <View style={tw`w-2/3 p-3 justify-center`}><Text style={tw`text-ink text-xs uppercase`}>{qrisState.method?.replace('_va', ' VA')}</Text></View>
+                    </View>
+                    <View style={tw`flex-row border-b border-whisper`}>
+                      <View style={tw`w-1/3 p-3 bg-slate-50 border-r border-whisper justify-center`}><Text style={tw`text-steel text-xs font-medium`}>Biaya Admin</Text></View>
+                      <View style={tw`w-2/3 p-3 justify-center`}><Text style={tw`text-ink text-xs`}>Rp {(qrisState.adminFee || 0).toLocaleString("id-ID")}</Text></View>
+                    </View>
+                    <View style={tw`flex-row border-b border-whisper`}>
+                      <View style={tw`w-1/3 p-3 bg-slate-50 border-r border-whisper justify-center`}><Text style={tw`text-steel text-xs font-medium`}>Biaya Aplikasi</Text></View>
+                      <View style={tw`w-2/3 p-3 justify-center`}><Text style={tw`text-ink text-xs`}>Rp {(qrisState.appFee || 0).toLocaleString("id-ID")}</Text></View>
+                    </View>
+                    <View style={tw`flex-row`}>
+                      <View style={tw`w-1/3 p-3 bg-slate-50 border-r border-whisper justify-center`}><Text style={tw`text-ink text-sm font-bold`}>Total Bayar</Text></View>
+                      <View style={tw`w-2/3 p-3 justify-center`}><Text style={tw`text-ink text-sm font-bold`}>Rp {(qrisState.totalAmount || bayarAmount).toLocaleString("id-ID")}</Text></View>
+                    </View>
+                  </View>
+                </View>
+
                 {timeLeft > 0 ? (
                   <>
                     <Text style={tw`text-sm text-steel mb-2`}>
-                      Selesaikan pembayaran sebelum batas waktu habis: <Text style={tw`font-bold text-red-500`}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</Text>
-                    </Text>
-                    <Text style={tw`text-xs font-bold text-red-500 text-center mb-6 px-4`}>
-                      ⚠️ Mohon JANGAN tutup halaman ini atau keluar dari aplikasi sebelum pembayaran selesai.
+                      Bayar sebelum batas waktu: <Text style={tw`font-bold text-red-500`}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</Text>
                     </Text>
                   </>
                 ) : (
